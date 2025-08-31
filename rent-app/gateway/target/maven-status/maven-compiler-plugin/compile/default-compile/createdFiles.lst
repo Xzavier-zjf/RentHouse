@@ -1,0 +1,3 @@
+com\renthouse\gateway\GatewayApplication.class
+com\renthouse\gateway\config\CorsConfig.class
+com\renthouse\gateway\controller\GatewayController.class

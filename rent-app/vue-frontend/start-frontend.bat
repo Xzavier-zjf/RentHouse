@@ -1,0 +1,6 @@
+@echo off
+echo Installing dependencies...
+npm install
+
+echo Starting Vue.js frontend development server...
+npm run dev

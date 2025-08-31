@@ -1,0 +1,7 @@
+com\renthouse\houseservice\model\House.class
+com\renthouse\houseservice\util\JwtUtil.class
+com\renthouse\houseservice\repository\HouseRepository.class
+com\renthouse\houseservice\service\HouseService.class
+com\renthouse\houseservice\HouseServiceApplication.class
+com\renthouse\houseservice\repository\HouseRepository$HouseRowMapper.class
+com\renthouse\houseservice\controller\HouseController.class

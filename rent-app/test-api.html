@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>API测试页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .test-section { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; }
+        .test-result { background-color: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 3px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        button { padding: 8px 15px; margin: 5px; background-color: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        input, select { padding: 5px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>租房网站API测试</h1>
+    
+    <div class="test-section">
+        <h3>1. 测试用户注册</h3>
+        <input type="text" id="test-reg-username" placeholder="测试用户名" value="testuser">
+        <input type="password" id="test-reg-password" placeholder="密码" value="123456">
+        <input type="email" id="test-reg-email" placeholder="邮箱" value="test@test.com">
+        <button onclick="testRegister()">测试注册</button>
+        <div id="register-result" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 测试用户登录</h3>
+        <input type="text" id="test-login-username" placeholder="用户名" value="testuser">
+        <input type="password" id="test-login-password" placeholder="密码" value="123456">
+        <button onclick="testLogin()">测试登录</button>
+        <div id="login-result" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. 测试管理员登录</h3>
+        <button onclick="testAdminLogin()">测试管理员登录</button>
+        <div id="admin-login-result" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. 测试房源搜索</h3>
+        <input type="text" id="test-search-location" placeholder="位置" value="北京">
+        <button onclick="testSearch()">测试搜索</button>
+        <div id="search-result" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>5. 测试房东申请</h3>
+        <button onclick="testApplyLandlord()">测试申请房东</button>
+        <div id="apply-result" class="test-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        let testToken = '';
+        let adminToken = '';
+        
+        function showResult(elementId, message, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.innerText = message;
+            element.className = isSuccess ? 'test-result success' : 'test-result error';
+        }
+        
+        function testRegister() {
+            const username = document.getElementById('test-reg-username').value;
+            const password = document.getElementById('test-reg-password').value;
+            const email = document.getElementById('test-reg-email').value;
+            
+            fetch(`${API_BASE}/api/user/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, email })
+            })
+            .then(response => response.text())
+            .then(data => {
+                showResult('register-result', `注册结果: ${data}`, data.includes('成功'));
+            })
+            .catch(error => {
+                showResult('register-result', `注册失败: ${error}`, false);
+            });
+        }
+        
+        function testLogin() {
+            const username = document.getElementById('test-login-username').value;
+            const password = document.getElementById('test-login-password').value;
+            
+            fetch(`${API_BASE}/api/user/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.token) {
+                    testToken = data.token;
+                    showResult('login-result', `登录成功! 角色: ${data.role}`, true);
+                } else {
+                    showResult('login-result', `登录失败: ${JSON.stringify(data)}`, false);
+                }
+            })
+            .catch(error => {
+                showResult('login-result', `登录失败: ${error}`, false);
+            });
+        }
+        
+        function testAdminLogin() {
+            fetch(`${API_BASE}/api/user/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'admin', password: 'admin123' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.token) {
+                    adminToken = data.token;
+                    showResult('admin-login-result', `管理员登录成功! 角色: ${data.role}`, true);
+                } else {
+                    showResult('admin-login-result', `管理员登录失败: ${JSON.stringify(data)}`, false);
+                }
+            })
+            .catch(error => {
+                showResult('admin-login-result', `管理员登录失败: ${error}`, false);
+            });
+        }
+        
+        function testSearch() {
+            const location = document.getElementById('test-search-location').value;
+            
+            fetch(`${API_BASE}/api/house/search?location=${encodeURIComponent(location)}`)
+            .then(response => response.json())
+            .then(data => {
+                showResult('search-result', `搜索结果: 找到 ${data.length} 个房源`, true);
+            })
+            .catch(error => {
+                showResult('search-result', `搜索失败: ${error}`, false);
+            });
+        }
+        
+        function testApplyLandlord() {
+            if (!testToken) {
+                showResult('apply-result', '请先登录普通用户', false);
+                return;
+            }
+            
+            fetch(`${API_BASE}/api/user/apply-landlord`, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + testToken }
+            })
+            .then(response => response.text())
+            .then(data => {
+                showResult('apply-result', `申请结果: ${data}`, data.includes('成功') || data.includes('已提交'));
+            })
+            .catch(error => {
+                showResult('apply-result', `申请失败: ${error}`, false);
+            });
+        }
+    </script>
+</body>
+</html>

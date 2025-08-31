@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>极简租房网站</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, button {
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .hidden {
+            display: none;
+        }
+        .response {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>极简租房网站</h1>
+    
+    <!-- 登录/注册部分 -->
+    <div id="auth-section">
+        <h2>用户注册</h2>
+        <div class="form-group">
+            <label>用户名:</label>
+            <input type="text" id="reg-username" placeholder="请输入用户名">
+        </div>
+        <div class="form-group">
+            <label>密码:</label>
+            <input type="password" id="reg-password" placeholder="请输入密码">
+        </div>
+        <div class="form-group">
+            <label>邮箱:</label>
+            <input type="email" id="reg-email" placeholder="请输入邮箱">
+        </div>
+        <button onclick="register()">注册</button>
+        
+        <h2>用户登录</h2>
+        <div class="form-group">
+            <label>用户名:</label>
+            <input type="text" id="login-username" placeholder="请输入用户名">
+        </div>
+        <div class="form-group">
+            <label>密码:</label>
+            <input type="password" id="login-password" placeholder="请输入密码">
+        </div>
+        <button onclick="login()">登录</button>
+        <button onclick="testLogin()" style="background-color: #28a745;">测试登录</button>
+        <button onclick="forceShowFunctions()" style="background-color: #ffc107;">强制显示功能</button>
+    </div>
+    
+    <!-- 功能区域 -->
+    <div id="function-section" class="hidden">
+        <h2>功能区域</h2>
+        <p>欢迎, <span id="current-user"></span>! <button onclick="logout()">退出登录</button></p>
+        
+        <!-- 普通用户功能 -->
+        <div id="user-functions" class="hidden">
+            <h3>用户功能</h3>
+            <button onclick="applyLandlord()">申请成为房东</button>
+            
+            <h3>搜索房源</h3>
+            <div class="form-group">
+                <label>位置:</label>
+                <input type="text" id="search-location" placeholder="请输入位置">
+            </div>
+            <button onclick="searchHouses()">搜索</button>
+            <div id="search-results" class="response"></div>
+        </div>
+        
+        <!-- 房东功能 -->
+        <div id="landlord-functions" class="hidden">
+            <h3>房东功能</h3>
+            
+            <h4>上传房源</h4>
+            <div class="form-group">
+                <label>标题:</label>
+                <input type="text" id="house-title" placeholder="请输入房源标题">
+            </div>
+            <div class="form-group">
+                <label>价格:</label>
+                <input type="number" id="house-price" placeholder="请输入价格">
+            </div>
+            <div class="form-group">
+                <label>位置:</label>
+                <input type="text" id="house-location" placeholder="请输入位置">
+            </div>
+            <button onclick="uploadHouse()">上传房源</button>
+            
+            <h4>我的房源</h4>
+            <button onclick="getMyHouses()">查看我的房源</button>
+            <div id="my-houses" class="response"></div>
+        </div>
+        
+        <!-- 管理员功能 -->
+        <div id="admin-functions" class="hidden">
+            <h3>管理员功能</h3>
+            
+            <h4>审核房东申请</h4>
+            <div class="form-group">
+                <label>用户ID:</label>
+                <input type="number" id="approve-user-id" placeholder="请输入用户ID">
+            </div>
+            <button onclick="approveLandlord()">批准房东申请</button>
+            
+            <h4>审核房源</h4>
+            <div class="form-group">
+                <label>房源ID:</label>
+                <input type="number" id="approve-house-id" placeholder="请输入房源ID">
+            </div>
+            <div class="form-group">
+                <label>状态:</label>
+                <select id="approve-house-status">
+                    <option value="APPROVED">批准</option>
+                    <option value="REJECTED">拒绝</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>原因:</label>
+                <input type="text" id="approve-house-reason" placeholder="请输入原因（可选）">
+            </div>
+            <button onclick="approveHouse()">审核房源</button>
+            
+            <h4>查看所有房源</h4>
+            <button onclick="getAllHouses()">查看所有房源</button>
+            <div id="all-houses" class="response"></div>
+        </div>
+    </div>
+    
+    <div id="response" class="response"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        let authToken = '';
+        let currentUserRole = '';
+        
+        // 注册功能
+        function register() {
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const email = document.getElementById('reg-email').value.trim();
+            
+            // 前端验证
+            if (!username) {
+                document.getElementById('response').innerText = '用户名不能为空';
+                return;
+            }
+            if (!password || password.length < 6) {
+                document.getElementById('response').innerText = '密码长度不能少于6位';
+                return;
+            }
+            if (!email || !email.includes('@')) {
+                document.getElementById('response').innerText = '请输入有效的邮箱地址';
+                return;
+            }
+            
+            fetch(`${API_BASE}/api/user/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password, email })
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('response').innerText = data;
+                // 注册成功后清空表单
+                if (data.includes('成功')) {
+                    document.getElementById('reg-username').value = '';
+                    document.getElementById('reg-password').value = '';
+                    document.getElementById('reg-email').value = '';
+                }
+            })
+            .catch(error => {
+                document.getElementById('response').innerText = '注册失败: ' + error;
+            });
+        }
+        
+        // 登录功能
+        function login() {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+            
+            // 前端验证
+            if (!username) {
+                document.getElementById('response').innerText = '用户名不能为空';
+                return;
+            }
+            if (!password) {
+                document.getElementById('response').innerText = '密码不能为空';
+                return;
+            }
+            
+            fetch(`${API_BASE}/api/user/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    return response.text().then(text => Promise.reject(text));
+                }
+            })
+            .then(data => {
+                console.log('登录响应数据:', data); // 调试日志
+                if (data && data.token) {
+                    authToken = data.token;
+                    currentUserRole = data.role || 'USER'; // 如果角色为空，默认为USER
+                    console.log('设置角色:', currentUserRole); // 调试日志
+                    
+                    document.getElementById('current-user').innerText = username + ' (' + currentUserRole + ')';
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('function-section').classList.remove('hidden');
+                    
+                    // 强制显示功能区域
+                    console.log('强制显示功能区域');
+                    document.getElementById('function-section').style.display = 'block';
+                    
+                    // 根据角色显示功能
+                    showRoleFunctions(currentUserRole);
+                    
+                    document.getElementById('response').innerText = '登录成功';
+                    
+                    // 清空登录表单
+                    document.getElementById('login-username').value = '';
+                    document.getElementById('login-password').value = '';
+                } else {
+                    console.error('登录响应格式错误:', data);
+                    document.getElementById('response').innerText = '登录失败：响应格式错误 - ' + JSON.stringify(data);
+                }
+            })
+            .catch(error => {
+                document.getElementById('response').innerText = '登录失败: ' + error;
+            });
+        }
+        
+        // 显示角色功能
+        function showRoleFunctions(role) {
+            console.log('显示角色功能:', role); // 调试日志
+            
+            // 先隐藏所有功能区域
+            document.getElementById('user-functions').classList.add('hidden');
+            document.getElementById('landlord-functions').classList.add('hidden');
+            document.getElementById('admin-functions').classList.add('hidden');
+            
+            // 强制显示功能区域
+            document.getElementById('user-functions').style.display = 'block';
+            document.getElementById('landlord-functions').style.display = 'block';
+            document.getElementById('admin-functions').style.display = 'block';
+            
+            // 根据角色显示对应功能
+            if (role === 'USER' || !role) {
+                console.log('显示用户功能');
+                document.getElementById('user-functions').classList.remove('hidden');
+                document.getElementById('user-functions').style.display = 'block';
+            } else if (role === 'LANDLORD') {
+                console.log('显示房东功能');
+                document.getElementById('user-functions').classList.remove('hidden');
+                document.getElementById('landlord-functions').classList.remove('hidden');
+                document.getElementById('user-functions').style.display = 'block';
+                document.getElementById('landlord-functions').style.display = 'block';
+            } else if (role === 'ADMIN') {
+                console.log('显示管理员功能');
+                document.getElementById('user-functions').classList.remove('hidden');
+                document.getElementById('landlord-functions').classList.remove('hidden');
+                document.getElementById('admin-functions').classList.remove('hidden');
+                document.getElementById('user-functions').style.display = 'block';
+                document.getElementById('landlord-functions').style.display = 'block';
+                document.getElementById('admin-functions').style.display = 'block';
+            } else {
+                console.error('未知角色:', role);
+                // 即使角色未知，也显示基本用户功能
+                document.getElementById('user-functions').classList.remove('hidden');
+                document.getElementById('user-functions').style.display = 'block';
+            }
+        }
+        
+        // 退出登录
+        function logout() {
+            authToken = '';
+            currentUserRole = '';
+            document.getElementById('auth-section').classList.remove('hidden');
+            document.getElementById('function-section').classList.add('hidden');
+            document.getElementById('response').innerText = '已退出登录';
+        }
+        
+        // 申请成为房东
+        function applyLandlord() {
+            fetch(`${API_BASE}/api/user/apply-landlord`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + authToken
+                }
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('response').innerText = data;
+            })
+            .catch(error => {
+                document.getElementById('response').innerText = '申请失败: ' + error;
+            });
+        }
+        
+        // 搜索房源
+        function searchHouses() {
+            const location = document.getElementById('search-location').value.trim();
+            
+            if (!location) {
+                document.getElementById('search-results').innerText = '请输入搜索位置';
+                return;
+            }
+            
+            fetch(`${API_BASE}/api/house/search?location=${encodeURIComponent(location)}`)
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    return response.text().then(text => Promise.reject(text));
+                }
+            })
+            .then(data => {
+                let html = '<h4>搜索结果:</h4>';
+                if (data.length > 0) {
+                    html += '<ul>';
+                    data.forEach(house => {
+                        html += `<li><strong>${house.title}</strong> - ￥${house.price} - ${house.location}</li>`;
+                    });
+                    html += '</ul>';
+                } else {
+                    html += '<p>未找到符合条件的房源</p>';
+                }
+                document.getElementById('search-results').innerHTML = html;
+            })
+            .catch(error => {
+                document.getElementById('search-results').innerText = '搜索失败: ' + error;
+            });
+        }
+        
+        // 上传房源
+        function uploadHouse() {
+            const title = document.getElementById('house-title').value.trim();
+            const price = document.getElementById('house-price').value;
+            const location = document.getElementById('house-location').value.trim();
+            
+            // 前端验证
+            if (!title) {
+                document.getElementById('response').innerText = '房源标题不能为空';
+                return;
+            }
+            if (!price || parseFloat(price) <= 0) {
+                document.getElementById('response').innerText = '房源价格必须大于0';
+                return;
+            }
+            if (!location) {
+                document.getElementById('response').innerText = '房源位置不能为空';
+                return;
+            }
+            
+            fetch(`${API_BASE}/api/house/upload`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + authToken
+                },
+                body: JSON.stringify({ title, price: parseFloat(price), location })
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('response').innerText = data;
+                // 清空表单
+                if (data.includes('成功')) {
+                    document.getElementById('house-title').value = '';
+                    document.getElementById('house-price').value = '';
+                    document.getElementById('house-location').value = '';
+                }
+            })
+            .catch(error => {
+                document.getElementById('response').innerText = '上传失败: ' + error;
+            });
+        }
+        
+        // 查看我的房源
+        function getMyHouses() {
+            fetch(`${API_BASE}/api/house/my-houses`, {
+                headers: {
+                    'Authorization': 'Bearer ' + authToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                let html = '<h4>我的房源:</h4>';
+                if (data.length > 0) {
+                    html += '<ul>';
+                    data.forEach(house => {
+                        html += `<li>${house.title} - ￥${house.price} - ${house.location} (状态: ${house.status})</li>`;
+                    });
+                    html += '</ul>';
+                } else {
+                    html += '<p>您还没有上传房源</p>';
+                }
+                document.getElementById('my-houses').innerHTML = html;
+            })
+            .catch(error => {
+                document.getElementById('my-houses').innerText = '获取失败: ' + error;
+            });
+        }
+        
+        // 批准房东申请
+        function approveLandlord() {
+            const userId = document.getElementById('approve-user-id').value.trim();
+            
+            if (!userId || isNaN(userId)) {
+                document.getElementById('response').innerText = '请输入有效的用户ID';
+                return;
+            }
+            
+            fetch(`${API_BASE}/api/user/admin/approve-landlord?userId=${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + authToken
+                }
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('response').innerText = data;
+                if (data.includes('成功')) {
+                    document.getElementById('approve-user-id').value = '';
+                }
+            })
+            .catch(error => {
+                document.getElementById('response').innerText = '操作失败: ' + error;
+            });
+        }
+        
+        // 审核房源
+        function approveHouse() {
+            const id = document.getElementById('approve-house-id').value.trim();
+            const status = document.getElementById('approve-house-status').value;
+            const reason = document.getElementById('approve-house-reason').value.trim();
+            
+            if (!id || isNaN(id)) {
+                document.getElementById('response').innerText = '请输入有效的房源ID';
+                return;
+            }
+            
+            fetch(`${API_BASE}/api/house/admin/approve-house?id=${id}&status=${status}&reason=${encodeURIComponent(reason)}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + authToken
+                }
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('response').innerText = data;
+                if (data.includes('成功')) {
+                    document.getElementById('approve-house-id').value = '';
+                    document.getElementById('approve-house-reason').value = '';
+                }
+            })
+            .catch(error => {
+                document.getElementById('response').innerText = '操作失败: ' + error;
+            });
+        }
+        
+        // 查看所有房源
+        function getAllHouses() {
+            fetch(`${API_BASE}/api/house/admin/houses`, {
+                headers: {
+                    'Authorization': 'Bearer ' + authToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                let html = '<h4>所有房源:</h4>';
+                if (data.length > 0) {
+                    html += '<ul>';
+                    data.forEach(house => {
+                        html += `<li>ID: ${house.id} - ${house.title} - ￥${house.price} - ${house.location} (状态: ${house.status})</li>`;
+                    });
+                    html += '</ul>';
+                } else {
+                    html += '<p>暂无房源</p>';
+                }
+                document.getElementById('all-houses').innerHTML = html;
+            })
+            .catch(error => {
+                document.getElementById('all-houses').innerText = '获取失败: ' + error;
+            });
+        }
+        
+        // 测试登录功能（用于调试）
+        function testLogin() {
+            console.log('开始测试登录...');
+            document.getElementById('response').innerText = '正在测试登录...';
+            
+            // 模拟成功登录
+            authToken = 'test-token';
+            currentUserRole = 'USER';
+            
+            document.getElementById('current-user').innerText = 'testuser (USER)';
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('function-section').classList.remove('hidden');
+            
+            showRoleFunctions(currentUserRole);
+            document.getElementById('response').innerText = '测试登录成功 - 如果看到功能区域，说明页面切换正常';
+        }
+        
+        // 强制显示功能区域（调试用）
+        function forceShowFunctions() {
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('function-section').style.display = 'block';
+            document.getElementById('user-functions').style.display = 'block';
+            document.getElementById('current-user').innerText = '调试用户 (USER)';
+            currentUserRole = 'USER';
+            authToken = 'debug-token';
+        }
+    </script>
+</body>
+</html>
