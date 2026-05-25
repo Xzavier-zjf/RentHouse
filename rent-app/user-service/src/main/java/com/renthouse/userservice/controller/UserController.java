@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user")
@@ -138,6 +139,23 @@ public class UserController {
         return ResponseEntity.ok("房东申请已批准");
     }
 
+    @PostMapping("/admin/reject-landlord")
+    public ResponseEntity<?> rejectLandlord(HttpServletRequest request,
+                                            @RequestParam Integer userId,
+                                            @RequestParam(required = false) String reason) {
+        if (!hasRole(request, "ADMIN")) {
+            return ResponseEntity.status(403).body("权限不足");
+        }
+
+        User user = userService.findById(userId);
+        if (user == null) {
+            return ResponseEntity.badRequest().body("用户不存在");
+        }
+
+        userService.rejectLandlord(userId, reason);
+        return ResponseEntity.ok("房东申请已拒绝");
+    }
+
     // 获取个人信息
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile(HttpServletRequest request) {
@@ -196,13 +214,59 @@ public class UserController {
 
     // 管理员查看所有用户
     @GetMapping("/admin/users")
-    public ResponseEntity<?> getAllUsers(HttpServletRequest request) {
+    public ResponseEntity<?> getAllUsers(HttpServletRequest request,
+                                         @RequestParam(required = false) Integer page,
+                                         @RequestParam(required = false) Integer size) {
         if (!hasRole(request, "ADMIN")) {
             return ResponseEntity.status(403).body("权限不足");
         }
-        
-        List<User> users = userService.findAllUsers();
-        return ResponseEntity.ok(users);
+
+        if (page == null || size == null) {
+            List<User> users = userService.findAllUsers();
+            return ResponseEntity.ok(users.stream().map(UserProfileResponse::new).toList());
+        }
+
+        int safePage = Math.max(page, 1);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        List<UserProfileResponse> users = userService.findUsersPage(safePage, safeSize)
+                .stream()
+                .map(UserProfileResponse::new)
+                .toList();
+        return ResponseEntity.ok(Map.of(
+                "items", users,
+                "total", userService.countUsers(),
+                "page", safePage,
+                "size", safeSize
+        ));
+    }
+
+    @GetMapping("/notifications")
+    public ResponseEntity<?> getNotifications(HttpServletRequest request,
+                                              @RequestParam(defaultValue = "1") Integer page,
+                                              @RequestParam(defaultValue = "10") Integer size) {
+        Integer userId = getUserId(request);
+        if (userId == null) {
+            return ResponseEntity.status(401).body("未授权");
+        }
+
+        int safePage = Math.max(page, 1);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        return ResponseEntity.ok(Map.of(
+                "items", userService.findNotifications(userId, safePage, safeSize),
+                "total", userService.countNotifications(userId),
+                "page", safePage,
+                "size", safeSize
+        ));
+    }
+
+    @PostMapping("/notifications/{id}/read")
+    public ResponseEntity<?> markNotificationRead(HttpServletRequest request, @PathVariable Integer id) {
+        Integer userId = getUserId(request);
+        if (userId == null) {
+            return ResponseEntity.status(401).body("未授权");
+        }
+        userService.markNotificationRead(userId, id);
+        return ResponseEntity.ok("通知已读");
     }
 
     // 检查用户角色
@@ -219,6 +283,18 @@ public class UserController {
         
         String role = jwtUtil.extractRole(token);
         return requiredRole.equals(role);
+    }
+
+    private Integer getUserId(HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        if (token == null || !token.startsWith("Bearer ")) {
+            return null;
+        }
+        token = token.substring(7);
+        if (!jwtUtil.isTokenValid(token)) {
+            return null;
+        }
+        return jwtUtil.extractUserId(token);
     }
     
     // 登录响应类
@@ -255,6 +331,7 @@ public class UserController {
         private String email;
         private String role;
         private String landlordApplyStatus;
+        private String landlordApplyReason;
         
         public UserProfileResponse(User user) {
             this.id = user.getId();
@@ -262,6 +339,7 @@ public class UserController {
             this.email = user.getEmail();
             this.role = user.getRole();
             this.landlordApplyStatus = user.getLandlordApplyStatus();
+            this.landlordApplyReason = user.getLandlordApplyReason();
         }
         
         // Getters and Setters
@@ -279,6 +357,9 @@ public class UserController {
         
         public String getLandlordApplyStatus() { return landlordApplyStatus; }
         public void setLandlordApplyStatus(String landlordApplyStatus) { this.landlordApplyStatus = landlordApplyStatus; }
+
+        public String getLandlordApplyReason() { return landlordApplyReason; }
+        public void setLandlordApplyReason(String landlordApplyReason) { this.landlordApplyReason = landlordApplyReason; }
     }
     
     // 更新个人信息请求类

@@ -7,6 +7,7 @@ public class User {
     private String email;
     private String role;
     private String landlordApplyStatus;
+    private String landlordApplyReason;
 
     // Constructors
     public User() {}
@@ -66,5 +67,13 @@ public class User {
 
     public void setLandlordApplyStatus(String landlordApplyStatus) {
         this.landlordApplyStatus = landlordApplyStatus;
+    }
+
+    public String getLandlordApplyReason() {
+        return landlordApplyReason;
+    }
+
+    public void setLandlordApplyReason(String landlordApplyReason) {
+        this.landlordApplyReason = landlordApplyReason;
     }
 }

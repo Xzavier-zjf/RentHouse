@@ -2,7 +2,7 @@
   <div id="app">
     <el-container>
       <el-header>
-        <h1>极简租房网站</h1>
+        <h1>RentHouse 租房平台</h1>
         <div v-if="isLoggedIn" class="user-info">
           欢迎, {{ currentUser.username }} ({{ currentUser.role }})
           <el-button @click="logout" type="danger" size="small">退出登录</el-button>
