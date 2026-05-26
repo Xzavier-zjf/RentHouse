@@ -163,7 +163,7 @@ export default {
         await houseAPI.uploadHouseImage(editForm.id, file)
         await loadHouseImages(editForm.id)
         await getMyHouses()
-        ElMessage.success('图片已上传')
+        ElMessage.success('图片已上传，房源将重新审核')
       } catch (error) {
         ElMessage.error('上传失败: ' + (error.response?.data || error.message))
       } finally {
@@ -176,6 +176,7 @@ export default {
         await houseAPI.updateHouseImage(editForm.id, image.fileId, { cover: true })
         await loadHouseImages(editForm.id)
         await getMyHouses()
+        ElMessage.success('封面已更新，房源将重新审核')
       } catch (error) {
         ElMessage.error('设置封面失败: ' + (error.response?.data || error.message))
       }
@@ -189,6 +190,7 @@ export default {
         await houseAPI.updateHouseImage(editForm.id, target.fileId, { sortOrder: image.sortOrder })
         await loadHouseImages(editForm.id)
         await getMyHouses()
+        ElMessage.success('排序已更新，房源将重新审核')
       } catch (error) {
         ElMessage.error('调整排序失败: ' + (error.response?.data || error.message))
       }
@@ -199,7 +201,7 @@ export default {
         await houseAPI.deleteHouseImage(editForm.id, image.fileId)
         await loadHouseImages(editForm.id)
         await getMyHouses()
-        ElMessage.success('图片已删除')
+        ElMessage.success('图片已删除，房源将重新审核')
       } catch (error) {
         if (error !== 'cancel') ElMessage.error('删除失败: ' + (error.response?.data || error.message))
       }

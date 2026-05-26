@@ -40,8 +40,13 @@ public class ImageStorageService {
     }
 
     public StoredImage read(String fileId) throws IOException {
+        if (!ObjectId.isValid(fileId)) {
+            return null;
+        }
         ObjectId objectId = new ObjectId(fileId);
-        GridFSFile file = gridFsTemplate.findOne(new Query(Criteria.where("_id").is(objectId)));
+        GridFSFile file = gridFsTemplate.findOne(new Query(Criteria.where("_id").is(objectId)
+                .and("metadata.ownerType").is("USER")
+                .and("metadata.usage").is("AVATAR")));
         if (file == null) {
             return null;
         }

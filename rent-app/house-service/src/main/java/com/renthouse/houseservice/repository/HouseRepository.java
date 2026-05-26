@@ -148,6 +148,11 @@ public class HouseRepository {
         jdbcTemplate.update(sql, status, reason, id);
     }
 
+    public void resetReviewStatus(Integer id, Integer userId) {
+        String sql = "UPDATE house SET status = 'PENDING', reason = NULL WHERE id = ? AND user_id = ? AND status <> 'OFFLINE'";
+        jdbcTemplate.update(sql, id, userId);
+    }
+
     public void update(House house) {
         String sql = "UPDATE house SET title = ?, price = ?, location = ?, latitude = ?, longitude = ?, description = ?, layout = ?, area = ?, floor = ?, orientation = ?, image_url = ?, contact_name = ?, contact_phone = ?, status = 'PENDING', reason = NULL WHERE id = ? AND user_id = ?";
         jdbcTemplate.update(sql, house.getTitle(), house.getPrice(), house.getLocation(), house.getLatitude(),

@@ -314,7 +314,9 @@ public class HouseService {
         if (!canManageHouseImages(userId, houseId)) {
             throw new IllegalArgumentException("房源不存在或无权管理图片");
         }
-        return houseImageStorageService.addHouseImage(houseId, file);
+        HouseImage image = houseImageStorageService.addHouseImage(houseId, file);
+        houseRepository.resetReviewStatus(houseId, userId);
+        return image;
     }
 
     public List<HouseImage> getHouseImages(Integer houseId) {
@@ -326,6 +328,7 @@ public class HouseService {
             throw new IllegalArgumentException("房源不存在或无权管理图片");
         }
         houseImageStorageService.updateHouseImage(houseId, fileId, sortOrder, cover);
+        houseRepository.resetReviewStatus(houseId, userId);
     }
 
     public void deleteHouseImage(Integer userId, Integer houseId, String fileId) {
@@ -333,6 +336,7 @@ public class HouseService {
             throw new IllegalArgumentException("房源不存在或无权管理图片");
         }
         houseImageStorageService.deleteHouseImage(houseId, fileId);
+        houseRepository.resetReviewStatus(houseId, userId);
     }
 
     public HouseImageStorageService.StoredImage readHouseImage(String fileId) throws java.io.IOException {
@@ -356,7 +360,12 @@ public class HouseService {
     }
 
     private List<House> enrichHouses(List<House> houses) {
-        houses.forEach(this::enrichHouse);
+        List<Integer> houseIds = houses.stream()
+                .map(House::getId)
+                .filter(id -> id != null)
+                .toList();
+        Map<Integer, List<HouseImage>> imagesByHouseId = houseImageStorageService.listHouseImagesByHouseIds(houseIds);
+        houses.forEach(house -> applyHouseImages(house, imagesByHouseId.getOrDefault(house.getId(), List.of())));
         return houses;
     }
 
@@ -365,6 +374,11 @@ public class HouseService {
             return house;
         }
         List<HouseImage> images = houseImageStorageService.listHouseImages(house.getId());
+        applyHouseImages(house, images);
+        return house;
+    }
+
+    private void applyHouseImages(House house, List<HouseImage> images) {
         house.setImages(images);
         String coverImageUrl = images.stream()
                 .filter(image -> Boolean.TRUE.equals(image.getCover()))
@@ -373,7 +387,6 @@ public class HouseService {
                 .map(HouseImage::getUrl)
                 .orElse(house.getImageUrl());
         house.setCoverImageUrl(coverImageUrl);
-        return house;
     }
 
     private House requireAvailableApprovedHouse(Integer houseId) {

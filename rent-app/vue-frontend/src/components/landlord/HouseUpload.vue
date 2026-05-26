@@ -20,9 +20,6 @@
             <el-form-item label="位置" prop="location">
               <el-select v-model="houseForm.location" filterable allow-create default-first-option placeholder="请选择或输入城市/区域/小区" class="full-width">
                 <el-option v-for="item in locationOptions" :key="item" :label="item" :value="item"></el-option>
-                <template #append>
-                  <el-button @click="chooseLocation" :loading="locating">定位</el-button>
-                </template>
               </el-select>
               <el-button class="location-button" @click="chooseLocation" :loading="locating">定位</el-button>
             </el-form-item>
@@ -128,13 +125,23 @@ export default {
         try {
           const response = await houseAPI.uploadHouse(houseForm)
           const houseId = response.data?.houseId
+          let imageFailed = 0
           if (houseId && imageFiles.value.length > 0) {
             for (const item of imageFiles.value) {
-              await houseAPI.uploadHouseImage(houseId, item.raw)
+              try {
+                await houseAPI.uploadHouseImage(houseId, item.raw)
+              } catch (error) {
+                imageFailed += 1
+              }
             }
           }
-          ElMessage.success('房源上传成功，等待管理员审核')
-          resetForm()
+          if (imageFailed > 0) {
+            ElMessage.warning(`房源已创建，但有 ${imageFailed} 张图片上传失败，可到我的房源继续上传`)
+            imageFiles.value = imageFiles.value.filter(item => item.raw && item.status !== 'success')
+          } else {
+            ElMessage.success('房源上传成功，等待管理员审核')
+            resetForm()
+          }
         } catch (error) {
           ElMessage.error('上传失败: ' + (error.response?.data || error.message))
         } finally {

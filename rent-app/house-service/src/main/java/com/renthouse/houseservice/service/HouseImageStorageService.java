@@ -15,8 +15,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.StreamSupport;
 
 @Service
@@ -55,6 +58,25 @@ public class HouseImageStorageService {
                 .toList();
     }
 
+    public Map<Integer, List<HouseImage>> listHouseImagesByHouseIds(List<Integer> houseIds) {
+        Map<Integer, List<HouseImage>> result = new LinkedHashMap<>();
+        if (houseIds == null || houseIds.isEmpty()) {
+            return result;
+        }
+        houseIds.forEach(houseId -> result.put(houseId, new ArrayList<>()));
+        Query query = new Query(Criteria.where("metadata.ownerType").is("HOUSE")
+                .and("metadata.usage").is("HOUSE_IMAGE")
+                .and("metadata.ownerId").in(houseIds));
+        gridFsTemplate.find(query).forEach(file -> {
+            Integer houseId = getHouseId(file);
+            if (houseId != null && result.containsKey(houseId)) {
+                result.get(houseId).add(toHouseImage(file));
+            }
+        });
+        result.values().forEach(images -> images.sort(Comparator.comparing(HouseImage::getSortOrder, Comparator.nullsLast(Integer::compareTo))));
+        return result;
+    }
+
     public String coverImageUrl(Integer houseId) {
         List<HouseImage> images = listHouseImages(houseId);
         return images.stream()
@@ -91,8 +113,13 @@ public class HouseImageStorageService {
     }
 
     public StoredImage read(String fileId) throws IOException {
+        if (!ObjectId.isValid(fileId)) {
+            return null;
+        }
         ObjectId objectId = new ObjectId(fileId);
-        GridFSFile file = gridFsTemplate.findOne(new Query(Criteria.where("_id").is(objectId)));
+        GridFSFile file = gridFsTemplate.findOne(new Query(Criteria.where("_id").is(objectId)
+                .and("metadata.ownerType").is("HOUSE")
+                .and("metadata.usage").is("HOUSE_IMAGE")));
         if (file == null) {
             return null;
         }
@@ -108,7 +135,24 @@ public class HouseImageStorageService {
     }
 
     private Query houseQuery(Integer houseId) {
-        return new Query(Criteria.where("metadata.ownerType").is("HOUSE").and("metadata.ownerId").is(houseId));
+        return new Query(Criteria.where("metadata.ownerType").is("HOUSE")
+                .and("metadata.ownerId").is(houseId)
+                .and("metadata.usage").is("HOUSE_IMAGE"));
+    }
+
+    private Integer getHouseId(GridFSFile file) {
+        Document metadata = file.getMetadata();
+        if (metadata == null) {
+            return null;
+        }
+        Object ownerId = metadata.get("ownerId");
+        if (ownerId instanceof Integer value) {
+            return value;
+        }
+        if (ownerId instanceof Number value) {
+            return value.intValue();
+        }
+        return null;
     }
 
     private GridFSFile requireHouseImage(Integer houseId, String fileId) {
@@ -117,7 +161,8 @@ public class HouseImageStorageService {
         }
         GridFSFile file = gridFsTemplate.findOne(new Query(Criteria.where("_id").is(new ObjectId(fileId))
                 .and("metadata.ownerType").is("HOUSE")
-                .and("metadata.ownerId").is(houseId)));
+                .and("metadata.ownerId").is(houseId)
+                .and("metadata.usage").is("HOUSE_IMAGE")));
         if (file == null) {
             throw new IllegalArgumentException("图片不存在");
         }
