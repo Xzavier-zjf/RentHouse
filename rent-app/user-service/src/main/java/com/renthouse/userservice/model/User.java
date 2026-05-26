@@ -5,6 +5,7 @@ public class User {
     private String username;
     private String password;
     private String email;
+    private String avatarFileId;
     private String role;
     private String landlordApplyStatus;
     private String landlordApplyReason;
@@ -51,6 +52,14 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getAvatarFileId() {
+        return avatarFileId;
+    }
+
+    public void setAvatarFileId(String avatarFileId) {
+        this.avatarFileId = avatarFileId;
     }
 
     public String getRole() {

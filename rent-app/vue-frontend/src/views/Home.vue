@@ -23,9 +23,15 @@
         </div>
       </template>
       <el-table :data="houses" stripe v-loading="loading">
+        <el-table-column label="封面" width="110">
+          <template #default="scope">
+            <el-image v-if="coverUrl(scope.row)" :src="coverUrl(scope.row)" fit="cover" class="cover-image" />
+            <span v-else class="no-image">暂无</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="title" label="标题" min-width="150"></el-table-column>
-        <el-table-column prop="price" label="租金" width="110">
-          <template #default="scope">￥{{ scope.row.price }}</template>
+        <el-table-column prop="price" label="月租金" width="120">
+          <template #default="scope">￥{{ scope.row.price }}/月</template>
         </el-table-column>
         <el-table-column prop="location" label="位置" min-width="150"></el-table-column>
         <el-table-column prop="layout" label="户型" width="120"></el-table-column>
@@ -41,7 +47,7 @@
 <script>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { houseAPI } from '../utils/api'
+import { assetUrl, houseAPI } from '../utils/api'
 
 export default {
   name: 'Home',
@@ -59,8 +65,9 @@ export default {
         loading.value = false
       }
     }
+    const coverUrl = (house) => assetUrl(house.coverImageUrl)
     onMounted(loadHouses)
-    return { loading, houses, location, loadHouses }
+    return { loading, houses, location, loadHouses, coverUrl }
   }
 }
 </script>
@@ -73,4 +80,6 @@ export default {
 .actions { display: flex; gap: 10px; }
 .header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .search-input { width: 360px; }
+.cover-image { width: 76px; height: 56px; border-radius: 4px; background: #f5f7fa; }
+.no-image { color: #909399; font-size: 12px; }
 </style>

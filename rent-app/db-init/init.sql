@@ -7,6 +7,7 @@ CREATE TABLE user (
   username VARCHAR(50) UNIQUE NOT NULL,
   password VARCHAR(100) NOT NULL, -- BCrypt加密
   email VARCHAR(100),
+  avatar_file_id VARCHAR(64),
   role VARCHAR(20) DEFAULT 'USER', -- USER/LANDLORD/ADMIN
   landlord_apply_status VARCHAR(20) DEFAULT 'NOT_APPLIED', -- NOT_APPLIED/PENDING/APPROVED/REJECTED
   landlord_apply_reason VARCHAR(255),
@@ -19,6 +20,8 @@ CREATE TABLE house (
   title VARCHAR(100) NOT NULL,
   price DECIMAL(10,2) NOT NULL,
   location VARCHAR(100) NOT NULL,
+  latitude DECIMAL(10,7),
+  longitude DECIMAL(10,7),
   description TEXT,
   layout VARCHAR(50),
   area DECIMAL(10,2),

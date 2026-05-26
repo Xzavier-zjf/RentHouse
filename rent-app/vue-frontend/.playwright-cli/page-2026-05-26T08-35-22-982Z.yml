@@ -1,0 +1,74 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - heading "RentHouse 租房平台" [level=1] [ref=e6]
+    - generic [ref=e34]:
+      - text: 欢迎, smokeuser1779784145 (LANDLORD)
+      - button "退出登录" [ref=e35] [cursor=pointer]:
+        - generic [ref=e36]: 退出登录
+  - main [ref=e7]:
+    - generic [ref=e38]:
+      - tablist [ref=e42]:
+        - tab "上传房源" [ref=e44]
+        - tab "我的房源" [ref=e45]
+        - tab "预约管理" [ref=e46]
+        - tab "租赁申请" [ref=e47]
+        - tab "站内通知" [ref=e48]
+        - tab "个人信息" [active] [selected] [ref=e49] [cursor=pointer]
+      - generic [ref=e50]:
+        - text: "* * *"
+        - tabpanel "个人信息" [ref=e308]:
+          - generic [ref=e310]:
+            - generic [ref=e312]:
+              - generic [ref=e313]: 个人信息
+              - button "编辑信息" [ref=e314] [cursor=pointer]:
+                - generic [ref=e315]: 编辑信息
+            - generic [ref=e317]:
+              - generic [ref=e318]:
+                - img [ref=e320]
+                - button "上传头像" [ref=e323] [cursor=pointer]:
+                  - generic [ref=e324]: 上传头像
+              - generic [ref=e325]:
+                - heading "基本信息" [level=3] [ref=e326]
+                - table [ref=e329]:
+                  - rowgroup [ref=e330]:
+                    - row "用户ID 18 用户名 smokeuser1779784145" [ref=e331]:
+                      - cell "用户ID" [ref=e332]
+                      - cell "18" [ref=e333]
+                      - cell "用户名" [ref=e334]
+                      - cell "smokeuser1779784145" [ref=e335]
+                    - row "角色 房东 邮箱 smokeuser1779784145@example.com" [ref=e336]:
+                      - cell "角色" [ref=e337]
+                      - cell "房东" [ref=e338]:
+                        - generic [ref=e340]: 房东
+                      - cell "邮箱" [ref=e341]
+                      - cell "smokeuser1779784145@example.com" [ref=e342]
+              - generic [ref=e343]:
+                - heading "房东信息" [level=3] [ref=e344]
+                - table [ref=e347]:
+                  - rowgroup [ref=e348]:
+                    - row "认证状态 已认证房东" [ref=e349]:
+                      - cell "认证状态" [ref=e350]
+                      - cell "已认证房东" [ref=e351]:
+                        - generic [ref=e353]: 已认证房东
+                    - row "房源管理 查看我的房源" [ref=e354]:
+                      - cell "房源管理" [ref=e355]
+                      - cell "查看我的房源" [ref=e356]:
+                        - button "查看我的房源" [ref=e357] [cursor=pointer]:
+                          - generic [ref=e358]: 查看我的房源
+              - generic [ref=e359]:
+                - heading "修改密码" [level=3] [ref=e360]
+                - generic [ref=e361]:
+                  - generic [ref=e362]:
+                    - generic [ref=e363]: 旧密码
+                    - textbox "旧密码" [ref=e367]:
+                      - /placeholder: 请输入旧密码
+                  - generic [ref=e368]:
+                    - generic [ref=e369]: 新密码
+                    - textbox "新密码" [ref=e373]:
+                      - /placeholder: 至少6位
+                  - generic [ref=e374]:
+                    - generic [ref=e375]: 确认密码
+                    - textbox "确认密码" [ref=e379]:
+                      - /placeholder: 再次输入新密码
+                  - button "修改密码" [ref=e382] [cursor=pointer]:
+                    - generic [ref=e383]: 修改密码

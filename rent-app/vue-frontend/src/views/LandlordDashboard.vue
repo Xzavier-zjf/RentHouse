@@ -1,6 +1,6 @@
 <template>
   <div class="landlord-dashboard">
-    <el-tabs v-model="activeTab">
+    <el-tabs v-model="activeTab" @tab-change="handleTabChange">
       <el-tab-pane label="上传房源" name="upload">
         <HouseUpload />
       </el-tab-pane>
@@ -24,7 +24,8 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import HouseUpload from '../components/landlord/HouseUpload.vue'
 import MyHouses from '../components/landlord/MyHouses.vue'
 import AppointmentManagement from '../components/landlord/AppointmentManagement.vue'
@@ -43,10 +44,26 @@ export default {
     UserProfile
   },
   setup() {
-    const activeTab = ref('upload')
+    const route = useRoute()
+    const router = useRouter()
+    const tabs = ['upload', 'myHouses', 'appointments', 'applications', 'notifications', 'profile']
+    const getRouteTab = () => tabs.includes(route.query.tab) ? route.query.tab : 'upload'
+    const activeTab = ref(getRouteTab())
+
+    const handleTabChange = (tabName) => {
+      router.replace({ path: route.path, query: { ...route.query, tab: tabName } })
+    }
+
+    watch(
+      () => route.query.tab,
+      () => {
+        activeTab.value = getRouteTab()
+      }
+    )
     
     return {
-      activeTab
+      activeTab,
+      handleTabChange
     }
   }
 }

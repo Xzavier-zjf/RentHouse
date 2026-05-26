@@ -56,6 +56,19 @@ public class UserService {
         userRepository.updateUser(user);
     }
 
+    public boolean changePassword(Integer userId, String oldPassword, String newPassword) {
+        User user = userRepository.findById(userId);
+        if (user == null || !checkPassword(oldPassword, user.getPassword())) {
+            return false;
+        }
+        userRepository.updatePassword(userId, passwordEncoder.encode(newPassword));
+        return true;
+    }
+
+    public void updateAvatarFileId(Integer userId, String avatarFileId) {
+        userRepository.updateAvatarFileId(userId, avatarFileId);
+    }
+
     public List<User> findAllUsers() {
         return userRepository.findAll();
     }

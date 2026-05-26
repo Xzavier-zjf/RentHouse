@@ -3,13 +3,17 @@ package com.renthouse.houseservice.controller;
 import com.renthouse.houseservice.model.House;
 import com.renthouse.houseservice.model.Appointment;
 import com.renthouse.houseservice.model.RentalApplication;
+import com.renthouse.houseservice.service.HouseImageStorageService;
 import com.renthouse.houseservice.service.HouseService;
 import com.renthouse.houseservice.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -62,8 +66,11 @@ public class HouseController {
             return ResponseEntity.badRequest().body(validationMessage);
         }
         
-        houseService.uploadHouse(house);
-        return ResponseEntity.ok("房源上传成功，等待管理员审核");
+        Integer houseId = houseService.uploadHouse(house);
+        return ResponseEntity.ok(Map.of(
+                "message", "房源上传成功，等待管理员审核",
+                "houseId", houseId
+        ));
     }
 
     @PutMapping("/{id}")
@@ -94,6 +101,71 @@ public class HouseController {
             return ResponseEntity.status(403).body("房源不存在或无权下架");
         }
         return ResponseEntity.ok("房源已下架");
+    }
+
+    @PostMapping("/{id}/images")
+    public ResponseEntity<?> uploadHouseImage(HttpServletRequest request, @PathVariable Integer id, @RequestParam("file") MultipartFile file) {
+        if (!hasRole(request, "LANDLORD")) {
+            return ResponseEntity.status(403).body("只有房东可以上传房源图片");
+        }
+        try {
+            return ResponseEntity.ok(houseService.addHouseImage(getUserId(request), id, file));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body("图片上传失败");
+        }
+    }
+
+    @GetMapping("/{id}/images")
+    public ResponseEntity<?> getHouseImages(@PathVariable Integer id) {
+        return ResponseEntity.ok(houseService.getHouseImages(id));
+    }
+
+    @PutMapping("/{id}/images/{fileId}")
+    public ResponseEntity<?> updateHouseImage(HttpServletRequest request,
+                                              @PathVariable Integer id,
+                                              @PathVariable String fileId,
+                                              @RequestBody UpdateHouseImageRequest updateRequest) {
+        if (!hasRole(request, "LANDLORD")) {
+            return ResponseEntity.status(403).body("只有房东可以编辑房源图片");
+        }
+        try {
+            houseService.updateHouseImage(getUserId(request), id, fileId, updateRequest.getSortOrder(), updateRequest.getCover());
+            return ResponseEntity.ok("图片已更新");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}/images/{fileId}")
+    public ResponseEntity<?> deleteHouseImage(HttpServletRequest request, @PathVariable Integer id, @PathVariable String fileId) {
+        if (!hasRole(request, "LANDLORD")) {
+            return ResponseEntity.status(403).body("只有房东可以删除房源图片");
+        }
+        try {
+            houseService.deleteHouseImage(getUserId(request), id, fileId);
+            return ResponseEntity.ok("图片已删除");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/images/{fileId}")
+    public ResponseEntity<?> readHouseImage(@PathVariable String fileId) {
+        try {
+            HouseImageStorageService.StoredImage image = houseService.readHouseImage(fileId);
+            if (image == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(image.contentType()))
+                    .body(image.data());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("图片ID无效");
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body("图片读取失败");
+        }
     }
 
     // 房东查看自己的房源
@@ -433,5 +505,26 @@ public class HouseController {
 
     private Map<String, Object> pageResult(Object items, Integer total, Integer page, Integer size) {
         return Map.of("items", items, "total", total, "page", page, "size", size);
+    }
+
+    public static class UpdateHouseImageRequest {
+        private Integer sortOrder;
+        private Boolean cover;
+
+        public Integer getSortOrder() {
+            return sortOrder;
+        }
+
+        public void setSortOrder(Integer sortOrder) {
+            this.sortOrder = sortOrder;
+        }
+
+        public Boolean getCover() {
+            return cover;
+        }
+
+        public void setCover(Boolean cover) {
+            this.cover = cover;
+        }
     }
 }

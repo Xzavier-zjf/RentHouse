@@ -1,6 +1,6 @@
 <template>
   <div class="admin-dashboard">
-    <el-tabs v-model="activeTab">
+    <el-tabs v-model="activeTab" @tab-change="handleTabChange">
       <el-tab-pane label="数据概览" name="statistics">
         <StatisticsOverview />
       </el-tab-pane>
@@ -24,7 +24,8 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import UserApproval from '../components/admin/UserApproval.vue'
 import HouseApproval from '../components/admin/HouseApproval.vue'
 import AllHouses from '../components/admin/AllHouses.vue'
@@ -43,10 +44,26 @@ export default {
     UserProfile
   },
   setup() {
-    const activeTab = ref('statistics')
+    const route = useRoute()
+    const router = useRouter()
+    const tabs = ['statistics', 'userApproval', 'houseApproval', 'allHouses', 'notifications', 'profile']
+    const getRouteTab = () => tabs.includes(route.query.tab) ? route.query.tab : 'statistics'
+    const activeTab = ref(getRouteTab())
+
+    const handleTabChange = (tabName) => {
+      router.replace({ path: route.path, query: { ...route.query, tab: tabName } })
+    }
+
+    watch(
+      () => route.query.tab,
+      () => {
+        activeTab.value = getRouteTab()
+      }
+    )
     
     return {
-      activeTab
+      activeTab,
+      handleTabChange
     }
   }
 }

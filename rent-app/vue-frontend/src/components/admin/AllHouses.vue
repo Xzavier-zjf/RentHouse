@@ -9,8 +9,14 @@
       <div v-if="houses.length > 0" class="houses-list">
         <el-table :data="houses" stripe style="width: 100%">
           <el-table-column prop="id" label="房源ID"></el-table-column>
+          <el-table-column label="封面" width="110">
+            <template #default="scope">
+              <el-image v-if="coverUrl(scope.row)" :src="coverUrl(scope.row)" fit="cover" class="cover-image" />
+              <span v-else class="no-image">暂无</span>
+            </template>
+          </el-table-column>
           <el-table-column prop="title" label="标题"></el-table-column>
-          <el-table-column prop="price" label="价格" :formatter="priceFormatter"></el-table-column>
+          <el-table-column prop="price" label="月租金" :formatter="priceFormatter"></el-table-column>
           <el-table-column prop="location" label="位置"></el-table-column>
           <el-table-column prop="status" label="状态">
             <template #default="scope">
@@ -33,7 +39,7 @@
 <script>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { houseAPI } from '../../utils/api'
+import { assetUrl, houseAPI } from '../../utils/api'
 
 export default {
   name: 'AllHouses',
@@ -54,8 +60,9 @@ export default {
     }
     
     const priceFormatter = (row, column, cellValue) => {
-      return `￥${cellValue}`
+      return cellValue ? `￥${cellValue}/月` : '-'
     }
+    const coverUrl = (house) => assetUrl(house.coverImageUrl)
     
     const getHouseStatusTagType = (status) => {
       switch(status) {
@@ -79,6 +86,7 @@ export default {
       houses,
       getAllHouses,
       priceFormatter,
+      coverUrl,
       getHouseStatusTagType
     }
   }
@@ -102,5 +110,17 @@ export default {
 
 .no-houses {
   margin-top: 20px;
+}
+
+.cover-image {
+  width: 76px;
+  height: 56px;
+  border-radius: 4px;
+  background: #f5f7fa;
+}
+
+.no-image {
+  color: #909399;
+  font-size: 12px;
 }
 </style>

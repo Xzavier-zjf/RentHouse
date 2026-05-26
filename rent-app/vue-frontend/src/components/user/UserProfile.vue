@@ -15,6 +15,17 @@
       </div>
       
       <div v-else-if="profile" class="profile-content">
+        <div class="avatar-section">
+          <el-avatar :size="96" :src="avatarSrc">{{ profile.username?.slice(0, 1) }}</el-avatar>
+          <el-upload
+            :show-file-list="false"
+            :before-upload="uploadAvatar"
+            accept="image/jpeg,image/png,image/webp"
+          >
+            <el-button type="primary" :loading="avatarUploading">上传头像</el-button>
+          </el-upload>
+        </div>
+
         <!-- 基本信息 -->
         <div class="info-section">
           <h3>基本信息</h3>
@@ -50,7 +61,7 @@
               <el-tag type="success">已认证房东</el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="房源管理">
-              <el-button type="text" @click="$router.push('/landlord')">查看我的房源</el-button>
+              <el-button type="text" @click="$router.push({ path: '/landlord', query: { tab: 'myHouses' } })">查看我的房源</el-button>
             </el-descriptions-item>
           </el-descriptions>
         </div>
@@ -72,26 +83,52 @@
           <el-button type="primary" @click="saveProfile" :loading="saving">保存修改</el-button>
           <el-button @click="cancelEdit">取消</el-button>
         </div>
+
+        <div class="info-section password-section">
+          <h3>修改密码</h3>
+          <el-form :model="passwordForm" label-width="90px" class="password-form">
+            <el-form-item label="旧密码">
+              <el-input v-model="passwordForm.oldPassword" type="password" show-password placeholder="请输入旧密码" />
+            </el-form-item>
+            <el-form-item label="新密码">
+              <el-input v-model="passwordForm.newPassword" type="password" show-password placeholder="至少6位" />
+            </el-form-item>
+            <el-form-item label="确认密码">
+              <el-input v-model="passwordForm.confirmPassword" type="password" show-password placeholder="再次输入新密码" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="changePassword" :loading="passwordSaving">修改密码</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
       </div>
     </el-card>
   </div>
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { userAPI } from '../../utils/api'
+import { assetUrl, userAPI } from '../../utils/api'
 
 export default {
   name: 'UserProfile',
   setup() {
     const loading = ref(true)
     const saving = ref(false)
+    const avatarUploading = ref(false)
+    const passwordSaving = ref(false)
     const editMode = ref(false)
     const profile = ref(null)
+    const avatarSrc = computed(() => assetUrl(profile.value?.avatarUrl))
     
     const editForm = reactive({
       email: ''
+    })
+    const passwordForm = reactive({
+      oldPassword: '',
+      newPassword: '',
+      confirmPassword: ''
     })
 
     const loadProfile = async () => {
@@ -133,6 +170,48 @@ export default {
     const cancelEdit = () => {
       editForm.email = profile.value.email || ''
       editMode.value = false
+    }
+
+    const uploadAvatar = async (file) => {
+      avatarUploading.value = true
+      try {
+        await userAPI.uploadAvatar(file)
+        ElMessage.success('头像已更新')
+        await loadProfile()
+      } catch (error) {
+        ElMessage.error('头像上传失败: ' + (error.response?.data || error.message))
+      } finally {
+        avatarUploading.value = false
+      }
+      return false
+    }
+
+    const changePassword = async () => {
+      if (!passwordForm.oldPassword || !passwordForm.newPassword) {
+        ElMessage.warning('请输入旧密码和新密码')
+        return
+      }
+      if (passwordForm.newPassword.length < 6) {
+        ElMessage.warning('新密码至少6位')
+        return
+      }
+      if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+        ElMessage.warning('两次输入的新密码不一致')
+        return
+      }
+      passwordSaving.value = true
+      try {
+        await userAPI.changePassword({
+          oldPassword: passwordForm.oldPassword,
+          newPassword: passwordForm.newPassword
+        })
+        Object.assign(passwordForm, { oldPassword: '', newPassword: '', confirmPassword: '' })
+        ElMessage.success('密码修改成功')
+      } catch (error) {
+        ElMessage.error('修改密码失败: ' + (error.response?.data || error.message))
+      } finally {
+        passwordSaving.value = false
+      }
     }
 
     const getRoleText = (role) => {
@@ -180,11 +259,17 @@ export default {
     return {
       loading,
       saving,
+      avatarUploading,
+      passwordSaving,
       editMode,
       profile,
+      avatarSrc,
       editForm,
+      passwordForm,
       saveProfile,
       cancelEdit,
+      uploadAvatar,
+      changePassword,
       getRoleText,
       getRoleTagType,
       getApplyStatusText,
@@ -214,6 +299,13 @@ export default {
   padding: 20px 0;
 }
 
+.avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
 .info-section {
   margin-bottom: 30px;
 }
@@ -232,6 +324,15 @@ export default {
 
 .edit-actions .el-button {
   margin: 0 10px;
+}
+
+.password-section {
+  border-top: 1px solid #ebeef5;
+  padding-top: 24px;
+}
+
+.password-form {
+  max-width: 420px;
 }
 
 .loading {

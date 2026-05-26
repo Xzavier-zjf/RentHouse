@@ -1,6 +1,6 @@
 <template>
   <div class="user-dashboard">
-    <el-tabs v-model="activeTab">
+    <el-tabs v-model="activeTab" @tab-change="handleTabChange">
       <el-tab-pane label="房源搜索" name="search">
         <HouseSearch />
       </el-tab-pane>
@@ -27,7 +27,8 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import HouseSearch from '../components/user/HouseSearch.vue'
 import ApplyLandlord from '../components/user/ApplyLandlord.vue'
 import UserProfile from '../components/user/UserProfile.vue'
@@ -48,10 +49,26 @@ export default {
     Notifications
   },
   setup() {
-    const activeTab = ref('search')
+    const route = useRoute()
+    const router = useRouter()
+    const tabs = ['search', 'favorites', 'appointments', 'applications', 'notifications', 'apply', 'profile']
+    const getRouteTab = () => tabs.includes(route.query.tab) ? route.query.tab : 'search'
+    const activeTab = ref(getRouteTab())
+
+    const handleTabChange = (tabName) => {
+      router.replace({ path: route.path, query: { ...route.query, tab: tabName } })
+    }
+
+    watch(
+      () => route.query.tab,
+      () => {
+        activeTab.value = getRouteTab()
+      }
+    )
     
     return {
-      activeTab
+      activeTab,
+      handleTabChange
     }
   }
 }

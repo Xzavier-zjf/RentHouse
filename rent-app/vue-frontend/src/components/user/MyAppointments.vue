@@ -35,18 +35,21 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
+import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
 import { houseAPI } from '../../utils/api'
 
 export default {
   name: 'MyAppointments',
   setup() {
+    const store = useStore()
     const loading = ref(false)
     const appointments = ref([])
     const page = ref(1)
     const size = ref(10)
     const total = ref(0)
+    const appointmentRefreshKey = computed(() => store.getters.appointmentRefreshKey)
     const loadAppointments = async () => {
       loading.value = true
       try {
@@ -72,6 +75,10 @@ export default {
         ElMessage.error('取消失败: ' + (error.response?.data || error.message))
       }
     }
+    watch(appointmentRefreshKey, () => {
+      page.value = 1
+      loadAppointments()
+    })
     onMounted(loadAppointments)
     return { loading, appointments, page, size, total, loadAppointments, handlePageChange, cancel }
   }

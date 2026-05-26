@@ -7,3 +7,10 @@ spring:
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/rent_image_db
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 40MB

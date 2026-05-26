@@ -1,13 +1,17 @@
 package com.renthouse.userservice.controller;
 
 import com.renthouse.userservice.model.User;
+import com.renthouse.userservice.service.ImageStorageService;
 import com.renthouse.userservice.service.UserService;
 import com.renthouse.userservice.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +24,8 @@ public class UserController {
     
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private ImageStorageService imageStorageService;
 
     // 用户注册
     @PostMapping("/register")
@@ -212,6 +218,64 @@ public class UserController {
         return ResponseEntity.ok("个人信息更新成功");
     }
 
+    @PostMapping("/avatar")
+    public ResponseEntity<?> uploadAvatar(HttpServletRequest request, @RequestParam("file") MultipartFile file) {
+        Integer userId = getUserId(request);
+        if (userId == null) {
+            return ResponseEntity.status(401).body("未授权");
+        }
+        User user = userService.findById(userId);
+        if (user == null) {
+            return ResponseEntity.status(401).body("用户不存在");
+        }
+        try {
+            String fileId = imageStorageService.replaceUserAvatar(userId, user.getAvatarFileId(), file);
+            userService.updateAvatarFileId(userId, fileId);
+            return ResponseEntity.ok(Map.of(
+                    "fileId", fileId,
+                    "avatarUrl", "/api/user/avatar/" + fileId
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body("头像上传失败");
+        }
+    }
+
+    @GetMapping("/avatar/{fileId}")
+    public ResponseEntity<?> getAvatar(@PathVariable String fileId) {
+        try {
+            ImageStorageService.StoredImage image = imageStorageService.read(fileId);
+            if (image == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(image.contentType()))
+                    .body(image.data());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("图片ID无效");
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body("图片读取失败");
+        }
+    }
+
+    @PutMapping("/password")
+    public ResponseEntity<?> changePassword(HttpServletRequest request, @RequestBody ChangePasswordRequest passwordRequest) {
+        Integer userId = getUserId(request);
+        if (userId == null) {
+            return ResponseEntity.status(401).body("未授权");
+        }
+        if (passwordRequest.getOldPassword() == null || passwordRequest.getOldPassword().isBlank()
+                || passwordRequest.getNewPassword() == null || passwordRequest.getNewPassword().length() < 6) {
+            return ResponseEntity.badRequest().body("请输入旧密码，新密码长度至少6位");
+        }
+        boolean changed = userService.changePassword(userId, passwordRequest.getOldPassword(), passwordRequest.getNewPassword());
+        if (!changed) {
+            return ResponseEntity.badRequest().body("旧密码错误");
+        }
+        return ResponseEntity.ok("密码修改成功");
+    }
+
     // 管理员查看所有用户
     @GetMapping("/admin/users")
     public ResponseEntity<?> getAllUsers(HttpServletRequest request,
@@ -330,6 +394,7 @@ public class UserController {
         private String username;
         private String email;
         private String role;
+        private String avatarUrl;
         private String landlordApplyStatus;
         private String landlordApplyReason;
         
@@ -338,6 +403,7 @@ public class UserController {
             this.username = user.getUsername();
             this.email = user.getEmail();
             this.role = user.getRole();
+            this.avatarUrl = user.getAvatarFileId() == null || user.getAvatarFileId().isBlank() ? null : "/api/user/avatar/" + user.getAvatarFileId();
             this.landlordApplyStatus = user.getLandlordApplyStatus();
             this.landlordApplyReason = user.getLandlordApplyReason();
         }
@@ -354,6 +420,9 @@ public class UserController {
         
         public String getRole() { return role; }
         public void setRole(String role) { this.role = role; }
+
+        public String getAvatarUrl() { return avatarUrl; }
+        public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
         
         public String getLandlordApplyStatus() { return landlordApplyStatus; }
         public void setLandlordApplyStatus(String landlordApplyStatus) { this.landlordApplyStatus = landlordApplyStatus; }
@@ -368,5 +437,16 @@ public class UserController {
         
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
+    }
+
+    public static class ChangePasswordRequest {
+        private String oldPassword;
+        private String newPassword;
+
+        public String getOldPassword() { return oldPassword; }
+        public void setOldPassword(String oldPassword) { this.oldPassword = oldPassword; }
+
+        public String getNewPassword() { return newPassword; }
+        public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
     }
 }

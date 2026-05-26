@@ -29,8 +29,8 @@ public class UserRepository {
     }
 
     public void save(User user) {
-        String sql = "INSERT INTO user (username, password, email, role, landlord_apply_status, landlord_apply_reason) VALUES (?, ?, ?, ?, ?, ?)";
-        jdbcTemplate.update(sql, user.getUsername(), user.getPassword(), user.getEmail(), user.getRole(), user.getLandlordApplyStatus(), user.getLandlordApplyReason());
+        String sql = "INSERT INTO user (username, password, email, avatar_file_id, role, landlord_apply_status, landlord_apply_reason) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        jdbcTemplate.update(sql, user.getUsername(), user.getPassword(), user.getEmail(), user.getAvatarFileId(), user.getRole(), user.getLandlordApplyStatus(), user.getLandlordApplyReason());
     }
 
     public void updateRole(Integer userId, String role) {
@@ -54,8 +54,18 @@ public class UserRepository {
     }
 
     public void updateUser(User user) {
-        String sql = "UPDATE user SET email = ?, role = ?, landlord_apply_status = ?, landlord_apply_reason = ? WHERE id = ?";
-        jdbcTemplate.update(sql, user.getEmail(), user.getRole(), user.getLandlordApplyStatus(), user.getLandlordApplyReason(), user.getId());
+        String sql = "UPDATE user SET email = ?, avatar_file_id = ?, role = ?, landlord_apply_status = ?, landlord_apply_reason = ? WHERE id = ?";
+        jdbcTemplate.update(sql, user.getEmail(), user.getAvatarFileId(), user.getRole(), user.getLandlordApplyStatus(), user.getLandlordApplyReason(), user.getId());
+    }
+
+    public void updatePassword(Integer userId, String encodedPassword) {
+        String sql = "UPDATE user SET password = ? WHERE id = ?";
+        jdbcTemplate.update(sql, encodedPassword, userId);
+    }
+
+    public void updateAvatarFileId(Integer userId, String avatarFileId) {
+        String sql = "UPDATE user SET avatar_file_id = ? WHERE id = ?";
+        jdbcTemplate.update(sql, avatarFileId, userId);
     }
 
     public List<User> findAll() {
@@ -81,6 +91,7 @@ public class UserRepository {
             user.setUsername(rs.getString("username"));
             user.setPassword(rs.getString("password"));
             user.setEmail(rs.getString("email"));
+            user.setAvatarFileId(rs.getString("avatar_file_id"));
             user.setRole(rs.getString("role"));
             user.setLandlordApplyStatus(rs.getString("landlord_apply_status"));
             user.setLandlordApplyReason(rs.getString("landlord_apply_reason"));

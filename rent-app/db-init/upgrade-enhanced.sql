@@ -29,8 +29,11 @@ DELIMITER ;
 CALL add_column_if_missing('user', 'created_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
 CALL add_column_if_missing('user', 'updated_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
 CALL add_column_if_missing('user', 'landlord_apply_reason', 'VARCHAR(255)');
+CALL add_column_if_missing('user', 'avatar_file_id', 'VARCHAR(64)');
 
 CALL add_column_if_missing('house', 'description', 'TEXT');
+CALL add_column_if_missing('house', 'latitude', 'DECIMAL(10,7)');
+CALL add_column_if_missing('house', 'longitude', 'DECIMAL(10,7)');
 CALL add_column_if_missing('house', 'layout', 'VARCHAR(50)');
 CALL add_column_if_missing('house', 'area', 'DECIMAL(10,2)');
 CALL add_column_if_missing('house', 'floor', 'VARCHAR(50)');

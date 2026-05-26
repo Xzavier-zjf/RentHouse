@@ -5,7 +5,10 @@ export default createStore({
     authToken: localStorage.getItem('authToken') || '',
     currentUser: JSON.parse(localStorage.getItem('currentUser')) || null,
     userRole: localStorage.getItem('userRole') || '',
-    houses: []
+    houses: [],
+    favoriteRefreshKey: 0,
+    appointmentRefreshKey: 0,
+    rentalApplicationRefreshKey: 0
   },
   mutations: {
     SET_AUTH_TOKEN(state, token) {
@@ -30,6 +33,15 @@ export default createStore({
     },
     SET_HOUSES(state, houses) {
       state.houses = houses
+    },
+    REFRESH_FAVORITES(state) {
+      state.favoriteRefreshKey += 1
+    },
+    REFRESH_APPOINTMENTS(state) {
+      state.appointmentRefreshKey += 1
+    },
+    REFRESH_RENTAL_APPLICATIONS(state) {
+      state.rentalApplicationRefreshKey += 1
     }
   },
   actions: {
@@ -43,6 +55,15 @@ export default createStore({
     },
     setHouses({ commit }, houses) {
       commit('SET_HOUSES', houses)
+    },
+    refreshFavorites({ commit }) {
+      commit('REFRESH_FAVORITES')
+    },
+    refreshAppointments({ commit }) {
+      commit('REFRESH_APPOINTMENTS')
+    },
+    refreshRentalApplications({ commit }) {
+      commit('REFRESH_RENTAL_APPLICATIONS')
     }
   },
   getters: {
@@ -50,6 +71,9 @@ export default createStore({
     currentUser: state => state.currentUser,
     userRole: state => state.userRole,
     authToken: state => state.authToken,
-    houses: state => state.houses
+    houses: state => state.houses,
+    favoriteRefreshKey: state => state.favoriteRefreshKey,
+    appointmentRefreshKey: state => state.appointmentRefreshKey,
+    rentalApplicationRefreshKey: state => state.rentalApplicationRefreshKey
   }
 })

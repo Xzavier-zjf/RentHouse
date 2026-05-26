@@ -1,0 +1,98 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - heading "RentHouse 租房平台" [level=1] [ref=e6]
+      - generic [ref=e34]:
+        - text: 欢迎, smokeuser1779784145 (LANDLORD)
+        - button "退出登录" [ref=e35] [cursor=pointer]:
+          - generic [ref=e36]: 退出登录
+    - main [ref=e7]:
+      - generic [ref=e38]:
+        - tablist [ref=e42]:
+          - tab "上传房源" [selected] [ref=e44]
+          - tab "我的房源" [ref=e45]
+          - tab "预约管理" [ref=e46]
+          - tab "租赁申请" [ref=e47]
+          - tab "站内通知" [ref=e48]
+          - tab "个人信息" [ref=e49]
+        - tabpanel "上传房源" [ref=e51]:
+          - generic [ref=e54]:
+            - heading "上传房源" [level=3] [ref=e55]
+            - generic [ref=e56]:
+              - generic [ref=e57]:
+                - generic [ref=e59]:
+                  - generic [ref=e60]: "* 标题"
+                  - textbox "* 标题" [ref=e64]:
+                    - /placeholder: 请输入房源标题
+                - generic [ref=e66]:
+                  - generic [ref=e67]: "* 月租金"
+                  - generic [ref=e69]:
+                    - button "decrease number" [ref=e70]:
+                      - img [ref=e72]
+                    - button "increase number" [ref=e74] [cursor=pointer]:
+                      - img [ref=e76]
+                    - spinbutton "* 月租金" [ref=e80]: "1"
+              - generic [ref=e81]:
+                - generic [ref=e83]:
+                  - generic [ref=e84]: "* 位置"
+                  - generic [ref=e85]:
+                    - generic [ref=e87]:
+                      - generic [ref=e88]:
+                        - combobox "* 位置" [ref=e90]
+                        - generic [ref=e91]: 请选择或输入城市/区域/小区
+                      - img [ref=e94] [cursor=pointer]
+                    - button "定位" [ref=e96] [cursor=pointer]:
+                      - generic [ref=e97]: 定位
+                - generic [ref=e99]:
+                  - generic [ref=e100]: 户型
+                  - generic [ref=e103]:
+                    - generic [ref=e104]:
+                      - combobox "户型" [ref=e106]
+                      - generic [ref=e107]: 请选择或输入户型
+                    - img [ref=e110] [cursor=pointer]
+              - generic [ref=e112]:
+                - generic [ref=e114]:
+                  - generic [ref=e115]: 面积
+                  - generic [ref=e117]:
+                    - button "decrease number" [ref=e118] [cursor=pointer]:
+                      - img [ref=e120]
+                    - button "increase number" [ref=e122] [cursor=pointer]:
+                      - img [ref=e124]
+                    - spinbutton "面积" [ref=e128]
+                - generic [ref=e130]:
+                  - generic [ref=e131]: 楼层
+                  - generic [ref=e134]:
+                    - generic [ref=e135]:
+                      - combobox "楼层" [ref=e137]
+                      - generic [ref=e138]: 请选择或输入楼层
+                    - img [ref=e141] [cursor=pointer]
+                - generic [ref=e144]:
+                  - generic [ref=e145]: 朝向
+                  - generic [ref=e148]:
+                    - generic [ref=e149]:
+                      - combobox "朝向" [ref=e151]
+                      - generic [ref=e152]: 请选择或输入朝向
+                    - img [ref=e155] [cursor=pointer]
+              - generic [ref=e157]:
+                - generic [ref=e159]:
+                  - generic [ref=e160]: 联系人
+                  - textbox "联系人" [ref=e164]
+                - generic [ref=e166]:
+                  - generic [ref=e167]: 联系电话
+                  - textbox "联系电话" [ref=e171]
+              - group "房源图片" [ref=e172]:
+                - generic [ref=e173]: 房源图片
+                - list [ref=e176]:
+                  - generic [ref=e178] [cursor=pointer]: 添加图片
+              - generic [ref=e179]:
+                - generic [ref=e180]: 描述
+                - textbox "描述" [ref=e183]:
+                  - /placeholder: 请输入房源描述
+              - generic [ref=e185]:
+                - button "上传房源" [ref=e186] [cursor=pointer]:
+                  - generic [ref=e187]: 上传房源
+                - button "重置" [ref=e188] [cursor=pointer]:
+                  - generic [ref=e189]: 重置
+  - alert [ref=e190]:
+    - img [ref=e192]
+    - paragraph [ref=e194]: 登录成功

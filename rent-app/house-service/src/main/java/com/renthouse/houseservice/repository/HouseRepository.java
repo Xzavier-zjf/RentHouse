@@ -9,9 +9,11 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
 
 @Repository
 public class HouseRepository {
@@ -19,11 +21,33 @@ public class HouseRepository {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public void save(House house) {
-        String sql = "INSERT INTO house (title, price, location, description, layout, area, floor, orientation, image_url, contact_name, contact_phone, user_id, status, rent_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        jdbcTemplate.update(sql, house.getTitle(), house.getPrice(), house.getLocation(), house.getDescription(),
-                house.getLayout(), house.getArea(), house.getFloor(), house.getOrientation(), house.getImageUrl(),
-                house.getContactName(), house.getContactPhone(), house.getUserId(), house.getStatus(), house.getRentStatus());
+    public Integer save(House house) {
+        String sql = "INSERT INTO house (title, price, location, latitude, longitude, description, layout, area, floor, orientation, image_url, contact_name, contact_phone, user_id, status, rent_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            java.sql.PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            statement.setObject(1, house.getTitle());
+            statement.setObject(2, house.getPrice());
+            statement.setObject(3, house.getLocation());
+            statement.setObject(4, house.getLatitude());
+            statement.setObject(5, house.getLongitude());
+            statement.setObject(6, house.getDescription());
+            statement.setObject(7, house.getLayout());
+            statement.setObject(8, house.getArea());
+            statement.setObject(9, house.getFloor());
+            statement.setObject(10, house.getOrientation());
+            statement.setObject(11, house.getImageUrl());
+            statement.setObject(12, house.getContactName());
+            statement.setObject(13, house.getContactPhone());
+            statement.setObject(14, house.getUserId());
+            statement.setObject(15, house.getStatus());
+            statement.setObject(16, house.getRentStatus());
+            return statement;
+        }, keyHolder);
+        Number key = keyHolder.getKey();
+        Integer id = key == null ? null : key.intValue();
+        house.setId(id);
+        return id;
     }
 
     public List<House> findByLocationAndStatus(String location, String status) {
@@ -125,10 +149,11 @@ public class HouseRepository {
     }
 
     public void update(House house) {
-        String sql = "UPDATE house SET title = ?, price = ?, location = ?, description = ?, layout = ?, area = ?, floor = ?, orientation = ?, image_url = ?, contact_name = ?, contact_phone = ?, status = 'PENDING', reason = NULL WHERE id = ? AND user_id = ?";
-        jdbcTemplate.update(sql, house.getTitle(), house.getPrice(), house.getLocation(), house.getDescription(),
-                house.getLayout(), house.getArea(), house.getFloor(), house.getOrientation(), house.getImageUrl(),
-                house.getContactName(), house.getContactPhone(), house.getId(), house.getUserId());
+        String sql = "UPDATE house SET title = ?, price = ?, location = ?, latitude = ?, longitude = ?, description = ?, layout = ?, area = ?, floor = ?, orientation = ?, image_url = ?, contact_name = ?, contact_phone = ?, status = 'PENDING', reason = NULL WHERE id = ? AND user_id = ?";
+        jdbcTemplate.update(sql, house.getTitle(), house.getPrice(), house.getLocation(), house.getLatitude(),
+                house.getLongitude(), house.getDescription(), house.getLayout(), house.getArea(),
+                house.getFloor(), house.getOrientation(), house.getImageUrl(), house.getContactName(), house.getContactPhone(),
+                house.getId(), house.getUserId());
     }
 
     public void offline(Integer id, Integer userId) {
@@ -163,6 +188,8 @@ public class HouseRepository {
         house.setTitle(rs.getString("title"));
         house.setPrice(rs.getBigDecimal("price"));
         house.setLocation(rs.getString("location"));
+        house.setLatitude(rs.getBigDecimal("latitude"));
+        house.setLongitude(rs.getBigDecimal("longitude"));
         house.setDescription(rs.getString("description"));
         house.setLayout(rs.getString("layout"));
         house.setArea(rs.getBigDecimal("area"));

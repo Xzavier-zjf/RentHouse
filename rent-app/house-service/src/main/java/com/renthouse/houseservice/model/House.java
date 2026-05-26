@@ -2,18 +2,24 @@ package com.renthouse.houseservice.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class House {
     private Integer id;
     private String title;
     private BigDecimal price;
     private String location;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
     private String description;
     private String layout;
     private BigDecimal area;
     private String floor;
     private String orientation;
     private String imageUrl;
+    private String coverImageUrl;
+    private List<HouseImage> images = new ArrayList<>();
     private String contactName;
     private String contactPhone;
     private Integer userId;
@@ -68,6 +74,22 @@ public class House {
         this.location = location;
     }
 
+    public BigDecimal getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(BigDecimal latitude) {
+        this.latitude = latitude;
+    }
+
+    public BigDecimal getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(BigDecimal longitude) {
+        this.longitude = longitude;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -114,6 +136,22 @@ public class House {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public String getCoverImageUrl() {
+        return coverImageUrl;
+    }
+
+    public void setCoverImageUrl(String coverImageUrl) {
+        this.coverImageUrl = coverImageUrl;
+    }
+
+    public List<HouseImage> getImages() {
+        return images;
+    }
+
+    public void setImages(List<HouseImage> images) {
+        this.images = images;
     }
 
     public String getContactName() {

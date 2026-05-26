@@ -16,9 +16,14 @@ timeout /t 10 /nobreak >nul
 echo Starting Gateway Service (Port 8080)...
 start "Gateway Service" cmd /c "cd gateway && mvn spring-boot:run"
 
+timeout /t 5 /nobreak >nul
+
+echo Starting Vue Frontend (Port 3000)...
+start "Vue Frontend" cmd /c "cd vue-frontend && npm run dev"
+
 echo.
 echo All services started!
 echo Please wait about 30 seconds for services to fully start
-echo Then open index.html for testing
+echo Then open http://localhost:3000 for testing
 echo.
 pause

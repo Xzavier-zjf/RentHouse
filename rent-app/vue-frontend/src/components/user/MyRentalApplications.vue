@@ -35,18 +35,21 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
+import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
 import { houseAPI } from '../../utils/api'
 
 export default {
   name: 'MyRentalApplications',
   setup() {
+    const store = useStore()
     const loading = ref(false)
     const applications = ref([])
     const page = ref(1)
     const size = ref(10)
     const total = ref(0)
+    const rentalApplicationRefreshKey = computed(() => store.getters.rentalApplicationRefreshKey)
     const loadApplications = async () => {
       loading.value = true
       try {
@@ -72,6 +75,10 @@ export default {
         ElMessage.error('取消失败: ' + (error.response?.data || error.message))
       }
     }
+    watch(rentalApplicationRefreshKey, () => {
+      page.value = 1
+      loadApplications()
+    })
     onMounted(loadApplications)
     return { loading, applications, page, size, total, loadApplications, handlePageChange, cancel }
   }

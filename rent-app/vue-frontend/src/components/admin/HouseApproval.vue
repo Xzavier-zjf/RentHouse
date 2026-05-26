@@ -18,8 +18,14 @@
 
       <el-table :data="houses" stripe style="width: 100%" v-loading="loading">
         <el-table-column prop="id" label="ID" width="70"></el-table-column>
+        <el-table-column label="封面" width="110">
+          <template #default="scope">
+            <el-image v-if="coverUrl(scope.row)" :src="coverUrl(scope.row)" fit="cover" class="cover-image" />
+            <span v-else class="no-image">暂无</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="title" label="标题" min-width="140"></el-table-column>
-        <el-table-column prop="price" label="租金" width="100" :formatter="priceFormatter"></el-table-column>
+        <el-table-column prop="price" label="月租金" width="100" :formatter="priceFormatter"></el-table-column>
         <el-table-column prop="location" label="位置" min-width="130"></el-table-column>
         <el-table-column prop="layout" label="户型" width="110"></el-table-column>
         <el-table-column prop="area" label="面积" width="90"></el-table-column>
@@ -55,7 +61,7 @@
 <script>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { houseAPI } from '../../utils/api'
+import { assetUrl, houseAPI } from '../../utils/api'
 
 export default {
   name: 'HouseApproval',
@@ -94,10 +100,11 @@ export default {
       await approveHouse(rejectHouseId.value, 'REJECTED', rejectReason.value)
       rejectVisible.value = false
     }
-    const priceFormatter = (row, column, cellValue) => cellValue ? `￥${cellValue}` : '-'
+    const priceFormatter = (row, column, cellValue) => cellValue ? `￥${cellValue}/月` : '-'
+    const coverUrl = (house) => assetUrl(house.coverImageUrl)
     const getHouseStatusTagType = (status) => ({ APPROVED: 'success', REJECTED: 'danger', PENDING: 'warning', OFFLINE: 'info' }[status] || 'info')
     onMounted(getAllHouses)
-    return { loading, houses, statusFilter, rejectVisible, rejectReason, getAllHouses, approveHouse, openReject, submitReject, priceFormatter, getHouseStatusTagType }
+    return { loading, houses, statusFilter, rejectVisible, rejectReason, getAllHouses, approveHouse, openReject, submitReject, priceFormatter, coverUrl, getHouseStatusTagType }
   }
 }
 </script>
@@ -106,4 +113,6 @@ export default {
 .house-approval { max-width: 1200px; margin: 0 auto; }
 .header { display: flex; justify-content: space-between; align-items: center; }
 .status-select { width: 130px; margin-right: 10px; }
+.cover-image { width: 76px; height: 56px; border-radius: 4px; background: #f5f7fa; }
+.no-image { color: #909399; font-size: 12px; }
 </style>

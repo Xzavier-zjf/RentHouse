@@ -7,14 +7,20 @@
       </div>
     </template>
     <el-table :data="favorites" stripe v-loading="loading">
+      <el-table-column label="封面" width="110">
+        <template #default="scope">
+          <el-image v-if="coverUrl(scope.row.house)" :src="coverUrl(scope.row.house)" fit="cover" class="cover-image" />
+          <span v-else class="no-image">暂无</span>
+        </template>
+      </el-table-column>
       <el-table-column label="房源">
         <template #default="scope">{{ scope.row.house?.title }}</template>
       </el-table-column>
       <el-table-column label="位置">
         <template #default="scope">{{ scope.row.house?.location }}</template>
       </el-table-column>
-      <el-table-column label="租金">
-        <template #default="scope">￥{{ scope.row.house?.price }}</template>
+      <el-table-column label="月租金">
+        <template #default="scope">￥{{ scope.row.house?.price }}/月</template>
       </el-table-column>
       <el-table-column label="户型">
         <template #default="scope">{{ scope.row.house?.layout || '-' }}</template>
@@ -29,15 +35,18 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
+import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
-import { houseAPI } from '../../utils/api'
+import { assetUrl, houseAPI } from '../../utils/api'
 
 export default {
   name: 'FavoriteHouses',
   setup() {
+    const store = useStore()
     const loading = ref(false)
     const favorites = ref([])
+    const favoriteRefreshKey = computed(() => store.getters.favoriteRefreshKey)
 
     const loadFavorites = async () => {
       loading.value = true
@@ -50,6 +59,7 @@ export default {
         loading.value = false
       }
     }
+    const coverUrl = (house) => assetUrl(house?.coverImageUrl)
 
     const removeFavorite = async (houseId) => {
       try {
@@ -61,12 +71,18 @@ export default {
       }
     }
 
+    watch(favoriteRefreshKey, () => {
+      loadFavorites()
+    })
+
     onMounted(loadFavorites)
-    return { loading, favorites, loadFavorites, removeFavorite }
+    return { loading, favorites, loadFavorites, removeFavorite, coverUrl }
   }
 }
 </script>
 
 <style scoped>
 .header { display: flex; justify-content: space-between; align-items: center; }
+.cover-image { width: 76px; height: 56px; border-radius: 4px; background: #f5f7fa; }
+.no-image { color: #909399; font-size: 12px; }
 </style>

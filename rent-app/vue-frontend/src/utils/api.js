@@ -1,10 +1,18 @@
 import axios from 'axios'
 
+export const API_BASE_URL = 'http://localhost:8080'
+
 // 创建axios实例
 const api = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: API_BASE_URL,
   timeout: 10000
 })
+
+export const assetUrl = (url) => {
+  if (!url) return ''
+  if (/^https?:\/\//.test(url)) return url
+  return `${API_BASE_URL}${url}`
+}
 
 // 请求拦截器
 api.interceptors.request.use(
@@ -88,6 +96,18 @@ export const userAPI = {
   // 更新个人信息
   updateProfile(profileData) {
     return api.put('/api/user/profile', profileData)
+  },
+
+  uploadAvatar(file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/api/user/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+
+  changePassword(data) {
+    return api.put('/api/user/password', data)
   }
 }
 
@@ -121,6 +141,26 @@ export const houseAPI = {
   // 下架房源
   offlineHouse(id) {
     return api.post(`/api/house/${id}/offline`)
+  },
+
+  uploadHouseImage(id, file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post(`/api/house/${id}/images`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+
+  getHouseImages(id) {
+    return api.get(`/api/house/${id}/images`)
+  },
+
+  updateHouseImage(id, fileId, data) {
+    return api.put(`/api/house/${id}/images/${fileId}`, data)
+  },
+
+  deleteHouseImage(id, fileId) {
+    return api.delete(`/api/house/${id}/images/${fileId}`)
   },
   
   // 管理员获取所有房源

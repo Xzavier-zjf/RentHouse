@@ -6,16 +6,20 @@
         <el-row :gutter="12">
           <el-col :span="8">
             <el-form-item label="位置">
-              <el-input v-model="searchForm.location" placeholder="请输入位置"></el-input>
+              <el-select v-model="searchForm.location" filterable allow-create clearable default-first-option placeholder="请选择或输入城市/区域/小区" class="full-width">
+                <el-option v-for="item in locationOptions" :key="item" :label="item" :value="item"></el-option>
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
             <el-form-item label="户型">
-              <el-input v-model="searchForm.layout" placeholder="如 两室一厅"></el-input>
+              <el-select v-model="searchForm.layout" filterable allow-create clearable default-first-option placeholder="请选择或输入户型" class="full-width">
+                <el-option v-for="item in layoutOptions" :key="item" :label="item" :value="item"></el-option>
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="价格">
+            <el-form-item label="月租金">
               <div class="range-inputs">
                 <el-input-number v-model="searchForm.minPrice" :min="0" placeholder="最低"></el-input-number>
                 <span>-</span>
@@ -44,8 +48,14 @@
       </el-form>
 
       <el-table :data="searchResults" stripe style="width: 100%" v-loading="loading">
+        <el-table-column label="封面" width="110">
+          <template #default="scope">
+            <el-image v-if="coverUrl(scope.row)" :src="coverUrl(scope.row)" fit="cover" class="cover-image" />
+            <span v-else class="no-image">暂无</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="title" label="标题" min-width="140"></el-table-column>
-        <el-table-column prop="price" label="租金" width="110" :formatter="priceFormatter"></el-table-column>
+        <el-table-column prop="price" label="月租金" width="110" :formatter="priceFormatter"></el-table-column>
         <el-table-column prop="location" label="位置" min-width="140"></el-table-column>
         <el-table-column prop="layout" label="户型" width="110"></el-table-column>
         <el-table-column prop="area" label="面积" width="100" :formatter="areaFormatter"></el-table-column>
@@ -68,14 +78,22 @@
     </el-card>
 
     <el-dialog v-model="detailVisible" title="房源详情" width="620px">
+      <el-carousel v-if="selectedHouseImages.length" height="280px" class="detail-carousel">
+        <el-carousel-item v-for="image in selectedHouseImages" :key="image.fileId">
+          <el-image :src="imageUrl(image.url)" fit="cover" class="detail-image" />
+        </el-carousel-item>
+      </el-carousel>
       <el-descriptions v-if="selectedHouse" :column="2" border>
         <el-descriptions-item label="标题">{{ selectedHouse.title }}</el-descriptions-item>
-        <el-descriptions-item label="租金">{{ priceFormatter(null, null, selectedHouse.price) }}</el-descriptions-item>
+        <el-descriptions-item label="月租金">{{ priceFormatter(null, null, selectedHouse.price) }}</el-descriptions-item>
         <el-descriptions-item label="位置">{{ selectedHouse.location }}</el-descriptions-item>
         <el-descriptions-item label="户型">{{ selectedHouse.layout || '-' }}</el-descriptions-item>
         <el-descriptions-item label="面积">{{ areaFormatter(null, null, selectedHouse.area) }}</el-descriptions-item>
         <el-descriptions-item label="楼层">{{ selectedHouse.floor || '-' }}</el-descriptions-item>
         <el-descriptions-item label="朝向">{{ selectedHouse.orientation || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="定位" v-if="selectedHouse.latitude && selectedHouse.longitude">
+          <el-button type="primary" link @click="openMap(selectedHouse)">查看地图</el-button>
+        </el-descriptions-item>
         <el-descriptions-item label="联系方式">{{ selectedHouse.contactName || '-' }} {{ selectedHouse.contactPhone || '' }}</el-descriptions-item>
         <el-descriptions-item label="描述" :span="2">{{ selectedHouse.description || '暂无描述' }}</el-descriptions-item>
       </el-descriptions>
@@ -129,23 +147,28 @@
 </template>
 
 <script>
-import { reactive, ref, onMounted } from 'vue'
+import { computed, reactive, ref, onMounted } from 'vue'
+import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
-import { houseAPI } from '../../utils/api'
+import { assetUrl, houseAPI } from '../../utils/api'
 
 export default {
   name: 'HouseSearch',
   setup() {
+    const store = useStore()
     const searchForm = reactive({ location: '', layout: '', minPrice: null, maxPrice: null, minArea: null, maxArea: null })
     const loading = ref(false)
     const searchResults = ref([])
     const searched = ref(false)
     const selectedHouse = ref(null)
+    const selectedHouseImages = computed(() => selectedHouse.value?.images || [])
     const detailVisible = ref(false)
     const appointmentVisible = ref(false)
     const applicationVisible = ref(false)
     const appointmentForm = reactive({ houseId: null, appointmentTime: '', contactName: '', contactPhone: '', message: '' })
     const applicationForm = reactive({ houseId: null, applicantName: '', applicantPhone: '', moveInDate: '', leaseMonths: 12, message: '' })
+    const locationOptions = ['北京市 朝阳区', '上海市 浦东新区', '广州市 天河区', '深圳市 南山区', '杭州市 西湖区', '成都市 高新区', '武汉市 洪山区', '南京市 鼓楼区', '重庆市 渝北区', '西安市 雁塔区']
+    const layoutOptions = ['一室一厅', '两室一厅', '两室两厅', '三室一厅', '三室两厅', '四室两厅', '单间', '复式', '公寓']
 
     const cleanParams = () => Object.fromEntries(Object.entries(searchForm).filter(([, value]) => value !== '' && value !== null && value !== undefined))
 
@@ -175,6 +198,7 @@ export default {
     const favorite = async (house) => {
       try {
         await houseAPI.addFavorite(house.id)
+        store.dispatch('refreshFavorites')
         ElMessage.success('收藏成功')
       } catch (error) {
         ElMessage.error('收藏失败: ' + (error.response?.data || error.message))
@@ -189,6 +213,7 @@ export default {
     const submitAppointment = async () => {
       try {
         await houseAPI.createAppointment(appointmentForm)
+        store.dispatch('refreshAppointments')
         ElMessage.success('预约已提交')
         appointmentVisible.value = false
       } catch (error) {
@@ -204,6 +229,7 @@ export default {
     const submitApplication = async () => {
       try {
         await houseAPI.createRentalApplication(applicationForm)
+        store.dispatch('refreshRentalApplications')
         ElMessage.success('申请已提交')
         applicationVisible.value = false
       } catch (error) {
@@ -211,15 +237,20 @@ export default {
       }
     }
 
-    const priceFormatter = (row, column, cellValue) => cellValue ? `￥${cellValue}` : '-'
+    const priceFormatter = (row, column, cellValue) => cellValue ? `￥${cellValue}/月` : '-'
     const areaFormatter = (row, column, cellValue) => cellValue ? `${cellValue}㎡` : '-'
+    const imageUrl = (url) => assetUrl(url)
+    const coverUrl = (house) => assetUrl(house.coverImageUrl)
+    const openMap = (house) => {
+      window.open(`https://www.google.com/maps?q=${house.latitude},${house.longitude}`, '_blank')
+    }
 
     onMounted(searchHouses)
 
     return {
       searchForm, loading, searchResults, searched, selectedHouse, detailVisible, appointmentVisible, applicationVisible,
-      appointmentForm, applicationForm, searchHouses, resetForm, openDetail, favorite, openAppointment, submitAppointment,
-      openApplication, submitApplication, priceFormatter, areaFormatter
+      appointmentForm, applicationForm, locationOptions, layoutOptions, searchHouses, resetForm, openDetail, favorite, openAppointment, submitAppointment,
+      openApplication, submitApplication, priceFormatter, areaFormatter, selectedHouseImages, imageUrl, coverUrl, openMap
     }
   }
 }
@@ -230,5 +261,10 @@ export default {
 .search-form { margin-bottom: 16px; }
 .range-inputs { display: flex; align-items: center; gap: 8px; }
 .range-inputs :deep(.el-input-number) { width: 120px; }
+.full-width { width: 100%; }
 .empty-tip { margin-top: 16px; }
+.cover-image { width: 76px; height: 56px; border-radius: 4px; background: #f5f7fa; }
+.no-image { color: #909399; font-size: 12px; }
+.detail-carousel { margin-bottom: 16px; border-radius: 6px; overflow: hidden; }
+.detail-image { width: 100%; height: 280px; background: #f5f7fa; }
 </style>

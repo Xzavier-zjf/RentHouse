@@ -1,6 +1,7 @@
 package com.renthouse.houseservice.service;
 
 import com.renthouse.houseservice.model.House;
+import com.renthouse.houseservice.model.HouseImage;
 import com.renthouse.houseservice.model.Favorite;
 import com.renthouse.houseservice.model.Appointment;
 import com.renthouse.houseservice.model.RentalApplication;
@@ -33,28 +34,30 @@ public class HouseService {
     private RentalApplicationRepository rentalApplicationRepository;
     @Autowired
     private NotificationRepository notificationRepository;
+    @Autowired
+    private HouseImageStorageService houseImageStorageService;
 
-    public void uploadHouse(House house) {
+    public Integer uploadHouse(House house) {
         if (house.getStatus() == null) {
             house.setStatus("PENDING");
         }
         if (house.getRentStatus() == null) {
             house.setRentStatus("AVAILABLE");
         }
-        houseRepository.save(house);
+        return houseRepository.save(house);
     }
 
     public List<House> searchHouses(String location) {
-        return houseRepository.findByLocationAndStatus(location, "APPROVED");
+        return enrichHouses(houseRepository.findByLocationAndStatus(location, "APPROVED"));
     }
 
     public List<House> searchHouses(String location, BigDecimal minPrice, BigDecimal maxPrice, String layout,
                                     BigDecimal minArea, BigDecimal maxArea, String status) {
-        return houseRepository.search(location, minPrice, maxPrice, layout, minArea, maxArea, status);
+        return enrichHouses(houseRepository.search(location, minPrice, maxPrice, layout, minArea, maxArea, status));
     }
 
     public House getHouseDetail(Integer id) {
-        return houseRepository.findById(id);
+        return enrichHouse(houseRepository.findById(id));
     }
 
     public House getPublicHouseDetail(Integer id) {
@@ -62,15 +65,15 @@ public class HouseService {
         if (house == null || !"APPROVED".equals(house.getStatus())) {
             return null;
         }
-        return house;
+        return enrichHouse(house);
     }
 
     public List<House> getMyHouses(Integer userId) {
-        return houseRepository.findByUserId(userId);
+        return enrichHouses(houseRepository.findByUserId(userId));
     }
 
     public List<House> getMyHouses(Integer userId, Integer page, Integer size) {
-        return houseRepository.findByUserId(userId, (page - 1) * size, size);
+        return enrichHouses(houseRepository.findByUserId(userId, (page - 1) * size, size));
     }
 
     public int countMyHouses(Integer userId) {
@@ -78,11 +81,11 @@ public class HouseService {
     }
 
     public List<House> getHousesByStatus(String status) {
-        return houseRepository.findByStatus(status);
+        return enrichHouses(houseRepository.findByStatus(status));
     }
 
     public List<House> getHousesByStatus(String status, Integer page, Integer size) {
-        return houseRepository.findByStatus(status, (page - 1) * size, size);
+        return enrichHouses(houseRepository.findByStatus(status, (page - 1) * size, size));
     }
 
     public int countHousesByStatus(String status) {
@@ -90,11 +93,11 @@ public class HouseService {
     }
 
     public List<House> getAllHouses() {
-        return houseRepository.findAll();
+        return enrichHouses(houseRepository.findAll());
     }
 
     public List<House> getAllHouses(Integer page, Integer size) {
-        return houseRepository.findAll((page - 1) * size, size);
+        return enrichHouses(houseRepository.findAll((page - 1) * size, size));
     }
 
     public int countAllHouses() {
@@ -166,7 +169,9 @@ public class HouseService {
     }
 
     public List<Favorite> getFavorites(Integer userId) {
-        return favoriteRepository.findByUserId(userId);
+        List<Favorite> favorites = favoriteRepository.findByUserId(userId);
+        favorites.forEach(favorite -> enrichHouse(favorite.getHouse()));
+        return favorites;
     }
 
     public void createAppointment(Integer userId, Appointment appointment) {
@@ -305,6 +310,35 @@ public class HouseService {
         return houseRepository.statistics();
     }
 
+    public HouseImage addHouseImage(Integer userId, Integer houseId, org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
+        if (!canManageHouseImages(userId, houseId)) {
+            throw new IllegalArgumentException("房源不存在或无权管理图片");
+        }
+        return houseImageStorageService.addHouseImage(houseId, file);
+    }
+
+    public List<HouseImage> getHouseImages(Integer houseId) {
+        return houseImageStorageService.listHouseImages(houseId);
+    }
+
+    public void updateHouseImage(Integer userId, Integer houseId, String fileId, Integer sortOrder, Boolean cover) {
+        if (!canManageHouseImages(userId, houseId)) {
+            throw new IllegalArgumentException("房源不存在或无权管理图片");
+        }
+        houseImageStorageService.updateHouseImage(houseId, fileId, sortOrder, cover);
+    }
+
+    public void deleteHouseImage(Integer userId, Integer houseId, String fileId) {
+        if (!canManageHouseImages(userId, houseId)) {
+            throw new IllegalArgumentException("房源不存在或无权管理图片");
+        }
+        houseImageStorageService.deleteHouseImage(houseId, fileId);
+    }
+
+    public HouseImageStorageService.StoredImage readHouseImage(String fileId) throws java.io.IOException {
+        return houseImageStorageService.read(fileId);
+    }
+
     private House requireApprovedHouse(Integer houseId) {
         House house = houseRepository.findById(houseId);
         if (house == null) {
@@ -313,6 +347,32 @@ public class HouseService {
         if (!"APPROVED".equals(house.getStatus())) {
             throw new IllegalArgumentException("只能操作已审核通过的房源");
         }
+        return house;
+    }
+
+    private boolean canManageHouseImages(Integer userId, Integer houseId) {
+        House existing = houseRepository.findById(houseId);
+        return existing != null && userId.equals(existing.getUserId());
+    }
+
+    private List<House> enrichHouses(List<House> houses) {
+        houses.forEach(this::enrichHouse);
+        return houses;
+    }
+
+    private House enrichHouse(House house) {
+        if (house == null || house.getId() == null) {
+            return house;
+        }
+        List<HouseImage> images = houseImageStorageService.listHouseImages(house.getId());
+        house.setImages(images);
+        String coverImageUrl = images.stream()
+                .filter(image -> Boolean.TRUE.equals(image.getCover()))
+                .findFirst()
+                .or(() -> images.stream().findFirst())
+                .map(HouseImage::getUrl)
+                .orElse(house.getImageUrl());
+        house.setCoverImageUrl(coverImageUrl);
         return house;
     }
 
