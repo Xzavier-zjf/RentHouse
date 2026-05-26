@@ -1,7 +1,10 @@
 <template>
   <div class="login">
     <el-card class="login-card">
-      <h2>用户登录</h2>
+      <div class="card-header">
+        <el-button type="text" @click="$router.push('/')">返回首页</el-button>
+        <h2>用户登录</h2>
+      </div>
       <el-form :model="loginForm" :rules="rules" ref="loginFormRef">
         <el-form-item label="用户名" prop="username">
           <el-input v-model="loginForm.username" placeholder="请输入用户名"></el-input>
@@ -137,6 +140,23 @@ export default {
 
 .login-card {
   width: 400px;
+}
+
+.card-header {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.card-header h2 {
+  margin: 0;
+  text-align: center;
+}
+
+.card-header .el-button {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .register-link {
